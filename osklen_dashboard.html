@@ -142,10 +142,10 @@
       </div>
       <nav class="db-nav">
         <div class="db-nav-section">Principal</div>
-        <a class="db-nav-item" onclick="loadModule(this, 'https://joyful-sunshine-0e375b.netlify.app/dashboard_franquias.html', 'Painel Geral', 'Atlas Diretoria')">
+        <a class="db-nav-item active" onclick="loadModule(this, 'https://joyful-sunshine-0e375b.netlify.app/dashboard_painelgeral.html', 'Painel Geral', 'Atlas Diretoria')">
           <i class="ti ti-layout-dashboard"></i> Painel Geral
         </a>
-        <a class="db-nav-item active" onclick="loadModule(this, 'https://joyful-sunshine-0e375b.netlify.app/dashboard_vendas.html', 'Vendas', 'Atlas Vendas')">
+        <a class="db-nav-item" onclick="loadModule(this, 'https://joyful-sunshine-0e375b.netlify.app/dashboard_vendas.html', 'Vendas', 'Atlas Vendas')">
           <i class="ti ti-chart-bar"></i> Vendas
           <span class="db-nav-dot"></span>
         </a>
@@ -299,7 +299,12 @@
       document.getElementById('user-avatar').textContent = initials;
       document.getElementById('user-name').textContent = match.user;
       document.getElementById('topbar-avatar').textContent = initials;
-      buildChart();
+      document.getElementById('page-title').textContent = 'Painel Geral';
+      document.getElementById('page-sub').textContent = 'Atlas Diretoria';
+      const frame = document.getElementById('module-frame');
+      frame.src = 'https://joyful-sunshine-0e375b.netlify.app/dashboard_painelgeral.html';
+      frame.style.display = 'block';
+      document.getElementById('vendas-panel').style.display = 'none';
     } else {
       document.getElementById('login-error').style.display = 'block';
     }
