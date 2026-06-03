@@ -38,7 +38,7 @@ body{font-family:var(--font);background:var(--gray-50);color:var(--black);line-h
 #fileInput{display:none}
 
 /* FILTER BAR */
-.filterbar{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 28px;height:52px;display:flex;align-items:center;gap:8px;position:sticky;top:52px;z-index:200}
+.filterbar{background:var(--white);border-bottom:1px solid var(--gray-200);padding:0 28px;height:52px;display:flex;align-items:center;gap:8px;position:sticky;top:0px;z-index:200}
 .fb-label{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--gray-500);margin-right:4px;white-space:nowrap}
 .fb-sep{width:1px;height:22px;background:var(--gray-200);margin:0 4px}
 .fd-btn{display:flex;align-items:center;gap:7px;background:var(--white);border:1px solid var(--gray-200);border-radius:var(--r);padding:6px 11px;cursor:pointer;font-family:var(--font);font-size:12px;color:var(--gray-700);transition:all .15s;white-space:nowrap;user-select:none;min-width:120px;justify-content:space-between}
@@ -170,21 +170,8 @@ tbody tr:hover td{background:var(--gray-50)}
 </div>
 
 <div id="app" style="display:none">
-<header class="topbar">
-  <div class="topbar-brand">
-    <span class="brand-name">Osklen</span>
-    <div class="brand-sep"></div>
-    <span class="brand-sub">Performance de Franquias</span>
-  </div>
-  <div class="topbar-right">
-    <label for="fileInput" class="upload-btn">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      Atualizar planilha
-    </label>
-    <input type="file" id="fileInput" accept=".xlsx">
-    <span class="topbar-ts" id="ts"></span>
-  </div>
-</header>
+<input type="file" id="fileInput" accept=".xlsx" style="display:none">
+<span id="ts" style="display:none"></span>
 
 <div class="filterbar">
   <span class="fb-label">Filtros</span>
