@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Wise – Vendas</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f2f2f2;
+  --surface:#ffffff;
+  --border:#d8d8d8;
+  --text:#111111;
+  --muted:#888888;
+  --accent:#111111;
+  --accent2:#444444;
+  --green:#111111;
+  --amber:#555555;
+  --red:#888888;
+  --font:'DM Sans',sans-serif;
+  --mono:'DM Mono',monospace;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px}
+h1{font-size:22px;font-weight:600;letter-spacing:-0.5px}
+h2{font-size:16px;font-weight:500;margin-bottom:12px}
+h3{font-size:13px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px}
+
+/* Layout */
+.shell{max-width:1200px;margin:0 auto;padding:24px 20px}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;flex-wrap:wrap;gap:12px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand-dot{width:8px;height:8px;background:#111;border-radius:50%}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;background:var(--border);border-radius:8px;padding:3px}
+.tab{padding:6px 14px;border-radius:6px;border:none;background:transparent;cursor:pointer;font-family:var(--font);font-size:13px;font-weight:500;color:var(--muted);transition:all .15s}
+.tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.tab:hover:not(.active){color:var(--text)}
+
+/* Section */
+.section{display:none}
+.section.active{display:block}
+
+/* KPI grid */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px}
+.kpi-label{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px}
+.kpi-value{font-size:26px;font-weight:600;font-family:var(--mono);letter-spacing:-1px;line-height:1}
+.kpi-sub{font-size:11px;color:var(--muted);margin-top:4px}
+.kpi.highlight{border-color:#111;background:#f2f2f2}
+.kpi.highlight .kpi-value{color:#111}
+
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+
+/* Table */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{font-size:11px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;text-align:left;border-bottom:1px solid var(--border);background:var(--bg);position:sticky;top:0}
+tbody tr{border-bottom:1px solid var(--border);transition:background .1s}
+tbody tr:hover{background:#f6f6f6}
+tbody td{padding:9px 10px;vertical-align:middle}
+.num{text-align:right;font-family:var(--mono);font-size:12px}
+.rank{width:22px;height:22px;background:var(--bg);border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:var(--muted)}
+.rank.top{background:#111;color:#fff}
+
+/* Progress bar */
+.prog-wrap{display:flex;align-items:center;gap:8px;min-width:120px}
+.prog-bar{flex:1;height:6px;background:#d8d8d8;border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;transition:width .4s}
+.pct-label{font-family:var(--mono);font-size:11px;min-width:44px;text-align:right;font-weight:500}
+
+/* Badge */
+.badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:500}
+.badge.g-masc{background:#e0e0e0;color:#222}
+.badge.g-fem{background:#c8c8c8;color:#222}
+.badge.g-uni{background:#b0b0b0;color:#222}
+
+/* Search & filter */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.search-box{position:relative;flex:1;min-width:180px}
+.search-box input{width:100%;padding:7px 10px 7px 32px;border:1px solid var(--border);border-radius:7px;font-family:var(--font);font-size:13px;background:var(--surface);outline:none;color:var(--text)}
+.search-box input:focus{border-color:#999}
+.search-icon{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px}
+select{padding:7px 10px;border:1px solid var(--border);border-radius:7px;font-family:var(--font);font-size:13px;background:var(--surface);outline:none;color:var(--text);cursor:pointer}
+select:focus{border-color:#999}
+
+/* Charts */
+.chart-wrap{position:relative;width:100%;height:300px}
+.chart-wrap.tall{height:400px}
+.chart-wrap.short{height:220px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:700px){.two-col{grid-template-columns:1fr}}
+
+/* Upload */
+.upload-area{border:2px dashed var(--border);border-radius:10px;padding:32px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface)}
+.upload-area:hover,.upload-area.drag{border-color:#111;background:#f0f0f0}
+.upload-area input{display:none}
+.upload-icon{font-size:32px;margin-bottom:10px}
+.upload-title{font-weight:500;margin-bottom:4px}
+.upload-sub{font-size:12px;color:var(--muted)}
+.upload-btn{display:inline-block;margin-top:12px;padding:8px 20px;background:var(--accent);color:#fff;border-radius:7px;font-weight:500;font-size:13px;cursor:pointer;border:none;font-family:var(--font)}
+
+/* Mini sparkline */
+.sparkline{height:40px}
+
+/* Grupo chip */
+.chip{display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:500;background:var(--bg);color:var(--muted);border:1px solid var(--border)}
+
+/* Loading */
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid #d8d8d8;border-top-color:#111;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Detail panel */
+.detail-panel{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;margin-top:8px;font-size:12px}
+
+.alert{padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px}
+.alert.success{background:#f0f0f0;color:#111;border:1px solid #aaa}
+.alert.info{background:#e8e8e8;color:#222;border:1px solid #bbb}
+
+.float-label{position:fixed;bottom:20px;right:20px;background:var(--text);color:#fff;padding:8px 14px;border-radius:8px;font-size:12px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:100}
+.float-label.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-dot"></div>
+      <h1>Acompanhamento de Vendas</h1>
+    </div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('visao-geral')">Visão Geral</button>
+      <button class="tab" onclick="switchTab('franquias')">Franquias</button>
+      <button class="tab" onclick="switchTab('produtos')">Produtos</button>
+      <button class="tab" onclick="switchTab('importar')">Importar</button>
+    </div>
+  </div>
+
+  <!-- VISÃO GERAL -->
+  <div id="visao-geral" class="section active">
+    <div class="kpi-grid" id="kpi-grid"></div>
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header"><h2>Faturamento por grupo</h2></div>
+        <div class="chart-wrap"><canvas id="chart-grupos" role="img" aria-label="Faturamento por grupo de produto"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <h2>Top 10 franquias</h2>
+          <span style="font-size:12px;color:var(--muted)">por faturamento</span>
+        </div>
+        <div class="chart-wrap"><canvas id="chart-ranking" role="img" aria-label="Ranking de franquias por faturamento"></canvas></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><h2>Atingimento de meta por franquia</h2></div>
+      <div class="chart-wrap tall"><canvas id="chart-meta" role="img" aria-label="Atingimento de meta por franquia"></canvas></div>
+    </div>
+  </div>
+
+  <!-- FRANQUIAS -->
+  <div id="franquias" class="section">
+    <div class="card">
+      <div class="card-header">
+        <h2>Ranking de franquias</h2>
+        <div class="filters">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-franquia" placeholder="Buscar franquia…" oninput="renderFranquias()">
+          </div>
+          <select id="filter-grupo-econ" onchange="renderFranquias()">
+            <option value="">Todos os grupos</option>
+          </select>
+          <select id="sort-franquia" onchange="renderFranquias()">
+            <option value="faturamento">Ordenar: Faturamento</option>
+            <option value="atingimento">Ordenar: Atingimento</option>
+            <option value="qtd">Ordenar: Qtd</option>
+          </select>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Franquia</th>
+              <th>Grupo Econ.</th>
+              <th class="num">Pedidos</th>
+              <th class="num">Qtd peças</th>
+              <th class="num">Faturamento</th>
+              <th class="num">Meta</th>
+              <th style="min-width:160px">Atingimento</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-franquias"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- PRODUTOS -->
+  <div id="produtos" class="section">
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-header">
+        <h2>Vendas por produto</h2>
+        <div class="filters">
+          <div class="search-box">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="search-produto" placeholder="Buscar produto…" oninput="renderProdutos()">
+          </div>
+          <select id="filter-grupo-prod" onchange="renderProdutos()">
+            <option value="">Todos os grupos</option>
+          </select>
+          <select id="filter-genero" onchange="renderProdutos()">
+            <option value="">Todos os gêneros</option>
+            <option value="MASCULINO">Masculino</option>
+            <option value="FEMININO">Feminino</option>
+            <option value="UNISSEX">Unissex</option>
+          </select>
+          <select id="sort-produto" onchange="renderProdutos()">
+            <option value="faturamento">Faturamento</option>
+            <option value="qtd">Quantidade</option>
+          </select>
+        </div>
+      </div>
+      <div id="prod-count" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
+      <div class="tbl-wrap" style="max-height:500px;overflow-y:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Produto</th>
+              <th>Grupo</th>
+              <th>Gênero</th>
+              <th class="num">Qtd</th>
+              <th class="num">Faturamento</th>
+              <th class="num">PV médio</th>
+              <th style="min-width:100px">% do total</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-produtos"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- IMPORTAR -->
+  <div id="importar" class="section">
+    <div class="alert info">
+      📋 Para atualizar o dashboard, importe a planilha com as abas <strong>WISE - PROD POR CLIENTE</strong>, <strong>PORTFÓLIO</strong> e <strong>META</strong>.
+    </div>
+    <div class="card">
+      <h2 style="margin-bottom:16px">Importar planilha</h2>
+      <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()" ondragover="dragOver(event)" ondrop="dropFile(event)" ondragleave="dragLeave()">
+        <input type="file" id="file-input" accept=".xlsx,.xls" onchange="handleFile(event)">
+        <div class="upload-icon">📊</div>
+        <div class="upload-title">Clique ou arraste a planilha aqui</div>
+        <div class="upload-sub">Aceita .xlsx — máx. 20MB</div>
+        <div><button class="upload-btn" type="button">Selecionar arquivo</button></div>
+      </div>
+      <div id="import-status" style="margin-top:16px"></div>
+    </div>
+    <div class="card" id="preview-card" style="display:none">
+      <h2 style="margin-bottom:12px">Preview da importação</h2>
+      <div id="preview-content"></div>
+      <button class="upload-btn" style="margin-top:12px" onclick="applyImport()">Aplicar importação</button>
+    </div>
+  </div>
+</div>
+
+<div class="float-label" id="float-msg"></div>
+
+<script>
+const INITIAL_DATA = {"total_faturamento":68635338,"total_meta":24064475,"total_atingimento":285.2,"total_qtd":105594,"franquias":[{"franquia":"FRANQUIA PORTO VELHO","grupo":"YAMCOL","faturamento":6369113,"meta":457406,"atingimento":1392.4,"qtd":9415},{"franquia":"FRANQUIA CURITIBA BATEL","grupo":"GRAZIELA","faturamento":5427475,"meta":1931344,"atingimento":281.0,"qtd":8364},{"franquia":"FRANQUIA RIBEIRAO PRETO","grupo":"MAURO","faturamento":5033692,"meta":1809281,"atingimento":278.2,"qtd":7641},{"franquia":"FRANQUIA TRANCOSO II","grupo":"SIMONE","faturamento":4507679,"meta":1629250,"atingimento":276.7,"qtd":5907},{"franquia":"FRANQUIA GOIANIA FLAMB.","grupo":"ADRIANA AZZE","faturamento":3683339,"meta":1422750,"atingimento":258.9,"qtd":5210},{"franquia":"FRANQUIA FLORIPA BEIRAMAR","grupo":"JUNIOR","faturamento":3609135,"meta":1309000,"atingimento":275.7,"qtd":4993},{"franquia":"FRANQUIA CURITIBA BARIGUI","grupo":"GRAZIELA","faturamento":3575966,"meta":1244250,"atingimento":287.4,"qtd":5971},{"franquia":"FRANQUIA SANTOS","grupo":"ELAINE","faturamento":3048218,"meta":985031,"atingimento":309.5,"qtd":4427},{"franquia":"FRANQUIA ICARAI","grupo":"RODRIGO","faturamento":3005493,"meta":1171406,"atingimento":256.6,"qtd":5145},{"franquia":"FRANQUIA CAMPOS PELINCA","grupo":"SUELLEN","faturamento":2894579,"meta":944563,"atingimento":306.4,"qtd":4866},{"franquia":"FRANQUIA BALNEARIO CAMB.","grupo":"JUNIOR","faturamento":2413661,"meta":941500,"atingimento":256.4,"qtd":3723},{"franquia":"FRANQUIA FLORIPA VL ROMANA","grupo":"JUNIOR","faturamento":2334403,"meta":875000,"atingimento":266.8,"qtd":3659},{"franquia":"FRANQUIA PLAZA NITEROI","grupo":"RODRIGO","faturamento":2250392,"meta":844156,"atingimento":266.6,"qtd":4212},{"franquia":"FRANQUIA UBERLANDIA","grupo":"ADRIANA DAHER","faturamento":2224570,"meta":754906,"atingimento":294.7,"qtd":3322},{"franquia":"FRANQUIA CAMPO GRANDE","grupo":"ROSANGELA","faturamento":2215960,"meta":793953,"atingimento":279.1,"qtd":3359},{"franquia":"FRANQUIA BALNEARIO AV BR","grupo":"JUNIOR","faturamento":2065866,"meta":773500,"atingimento":267.1,"qtd":2773},{"franquia":"FRANQUIA NITEROI","grupo":"RODRIGO","faturamento":1986059,"meta":695406,"atingimento":285.6,"qtd":3464},{"franquia":"FRANQUIA GOIANIA SHOP II","grupo":"ADRIANA AZZE","faturamento":1808391,"meta":628250,"atingimento":287.8,"qtd":2588},{"franquia":"FRANQUIA JUIZ DE FORA II","grupo":"VINICIUS","faturamento":1588970,"meta":602438,"atingimento":263.8,"qtd":2957},{"franquia":"FRANQUIA TERESINA","grupo":"LAIO","faturamento":1544110,"meta":663250,"atingimento":232.8,"qtd":2562},{"franquia":"FRANQUIA GOIANIA PARANHOS","grupo":"ADRIANA AZZE","faturamento":1288798,"meta":400750,"atingimento":321.6,"qtd":1739},{"franquia":"FRANQUIA CUIABA II","grupo":"FABIANA","faturamento":1210680,"meta":490438,"atingimento":246.9,"qtd":1930},{"franquia":"FRANQUIA MACEIO","grupo":"ALYSSON","faturamento":1185327,"meta":574413,"atingimento":206.4,"qtd":1961},{"franquia":"FRANQUIA JOAO PESSOA","grupo":"ALYSSON","faturamento":1091564,"meta":490136,"atingimento":222.7,"qtd":1832},{"franquia":"FRANQUIA ARACAJU","grupo":"ALYSSON","faturamento":932006,"meta":499452,"atingimento":186.6,"qtd":1478},{"franquia":"FRANQUIA UBERLANDIA SHOPPING","grupo":"ADRIANA DAHER","faturamento":911356,"meta":308656,"atingimento":295.3,"qtd":1368},{"franquia":"FRANQUIA NATAL II","grupo":"ALYSSON","faturamento":428536,"meta":230915,"atingimento":185.6,"qtd":728}],"produtos":[{"produto":"T-SHIRT SUPERSOFT COMFORT MC","faturamento":1595184,"qtd":2672,"grupo":"T-SHIRT MC","genero":"MASCULINO"},{"produto":"POLO SUPERSOFT","faturamento":898683,"qtd":1389,"grupo":"POLO MC","genero":"MASCULINO"},{"produto":"BERMUDA ALFAIATARIA BASIC LINEN","faturamento":864392,"qtd":1336,"grupo":"BERMUDA","genero":"MASCULINO"},{"produto":"BERMUDA ALFAIATARIA PURE LINEN","faturamento":757068,"qtd":844,"grupo":"BERMUDA","genero":"MASCULINO"},{"produto":"CANVAS AG SNEAKER M","faturamento":714425,"qtd":1025,"grupo":"TENIS","genero":"MASCULINO"},{"produto":"CAMISA CLASSIC LINEN ML","faturamento":710424,"qtd":792,"grupo":"CAMISA ML","genero":"MASCULINO"},{"produto":"CALCA ALFAIATARIA KNIT","faturamento":706398,"qtd":834,"grupo":"CALCA","genero":"MASCULINO"},{"produto":"CAMISA CLASSIC LINEN NEW MC","faturamento":689405,"qtd":865,"grupo":"CAMISA MC","genero":"MASCULINO"},{"produto":"CAMISA CLASSIC LINEN COLOR ML","faturamento":653016,"qtd":728,"grupo":"CAMISA ML","genero":"MASCULINO"},{"produto":"TENIS BOSSANOVA NOBUCK","faturamento":643118,"qtd":994,"grupo":"TENIS","genero":"MASCULINO"},{"produto":"T-SHIRT SOFT USED GOLD CROWN MC","faturamento":614178,"qtd":1374,"grupo":"T-SHIRT MC","genero":"MASCULINO"},{"produto":"TENIS SOHO SOFT MOC MASC","faturamento":587571,"qtd":843,"grupo":"TENIS","genero":"MASCULINO"},{"produto":"TENIS BOSSANOVA CAMURCA","faturamento":551327,"qtd":791,"grupo":"TENIS","genero":"MASCULINO"},{"produto":"TENIS ARPX STRAPS MASC","faturamento":545945,"qtd":685,"grupo":"TENIS","genero":"MASCULINO"},{"produto":"T-SHIRT SUPERSOFT COLOR MC","faturamento":543890,"qtd":1370,"grupo":"T-SHIRT MC","genero":"MASCULINO"},{"produto":"CAMISA CLASSIC LINEN NEW ML","faturamento":531024,"qtd":592,"grupo":"CAMISA ML","genero":"MASCULINO"},{"produto":"CAMISA CLASSIC COTTON MC","faturamento":500286,"qtd":838,"grupo":"CAMISA MC","genero":"MASCULINO"},{"produto":"TENIS SOHO MASC.","faturamento":441898,"qtd":634,"grupo":"TENIS","genero":"MASCULINO"},{"produto":"CAMISA CLASSIC LINEN  MC","faturamento":428786,"qtd":538,"grupo":"CAMISA MC","genero":"MASCULINO"},{"produto":"TENIS HYBRID # 2 SOFT MASC","faturamento":411723,"qtd":459,"grupo":"TENIS","genero":"MASCULINO"},{"produto":"SHORT FLUID LINEN PLEATS","faturamento":395115,"qtd":795,"grupo":"SHORT","genero":"MASCULINO"},{"produto":"CAMISA CLASSIC LINEN MC","faturamento":387342,"qtd":486,"grupo":"CAMISA MC","genero":"MASCULINO"},{"produto":"MACACAO TRANSPASSE AMPLO","faturamento":373875,"qtd":375,"grupo":"MACACAO","genero":"FEMININO"},{"produto":"CALCA ALFAIATARIA FLUID LINEN","faturamento":365904,"qtd":432,"grupo":"CALCA","genero":"MASCULINO"},{"produto":"CALCA SUPERLIGHT RETA","faturamento":355812,"qtd":596,"grupo":"CALCA","genero":"FEMININO"},{"produto":"JUTE AG SNEAKER MASC","faturamento":351624,"qtd":392,"grupo":"TENIS","genero":"MASCULINO"},{"produto":"BLUSA SLEEVELESS V SUPERLIGHT","faturamento":326310,"qtd":730,"grupo":"BLUSA MC","genero":"FEMININO"},{"produto":"T-SHIRT MADE IN BRAZIL BORDADO MC","faturamento":325863,"qtd":729,"grupo":"T-SHIRT MC","genero":"MASCULINO"},{"produto":"BLUSA SUPERLIGHT T SHIRT","faturamento":320052,"qtd":716,"grupo":"BLUSA MC","genero":"FEMININO"},{"produto":"BERMUDA RUSTIC E-BASICS","faturamento":319571,"qtd":643,"grupo":"BERMUDA","genero":"MASCULINO"},{"produto":"POLO PIQUET SOFT TOUCH","faturamento":308140,"qtd":620,"grupo":"POLO MC","genero":"MASCULINO"},{"produto":"TENIS ARPX RIVA FUSIONADO M","faturamento":307377,"qtd":441,"grupo":"TENIS","genero":"MASCULINO"},{"produto":"SANDALIA SLIDE CALCADAO","faturamento":305067,"qtd":511,"grupo":"SANDALIA","genero":"FEMININO"},{"produto":"VESTIDO MIDI ALÇAS SUPERLIGHT","faturamento":299013,"qtd":429,"grupo":"VESTIDO","genero":"FEMININO"},{"produto":"SHORT SUPERLIGHT","faturamento":295914,"qtd":662,"grupo":"SHORT","genero":"FEMININO"},{"produto":"TENIS KAAPUERA MASC","faturamento":288834,"qtd":322,"grupo":"TENIS","genero":"MASCULINO"},{"produto":"PIRARUCU FLAP SHOULDER BAG","faturamento":287784,"qtd":72,"grupo":"BOLSAS","genero":"UNISSEX"},{"produto":"BERMUDA FLOW COTTON","faturamento":287763,"qtd":579,"grupo":"BERMUDA","genero":"MASCULINO"},{"produto":"CALÇA SUPERCOMFORT FIVE POCKETS","faturamento":270980,"qtd":340,"grupo":"CALCA","genero":"MASCULINO"},{"produto":"ANDIROBA MINI BAG","faturamento":269700,"qtd":100,"grupo":"BOLSAS","genero":"UNISSEX"},{"produto":"VESTIDO ACINTURADO TORCIDO PLISSADO","faturamento":267182,"qtd":206,"grupo":"VESTIDO","genero":"FEMININO"},{"produto":"TENIS TRAIL TRKK MASC","faturamento":266931,"qtd":223,"grupo":"TENIS","genero":"MASCULINO"},{"produto":"TENIS SOHO JOATINGA COURO GRAXO MASC","faturamento":265932,"qtd":356,"grupo":"TENIS","genero":"MASCULINO"},{"produto":"CAMISA PENCES LINHO RECICLADO","faturamento":255509,"qtd":197,"grupo":"BLUSA ML","genero":"FEMININO"},{"produto":"TENIS BOSSANOVA JUTA ECO MASC","faturamento":254405,"qtd":365,"grupo":"TENIS","genero":"MASCULINO"},{"produto":"BERMUDA PJ LINEN CLASSIC","faturamento":254243,"qtd":319,"grupo":"BERMUDA","genero":"MASCULINO"},{"produto":"CALCA RUSTIC E-BASICS","faturamento":253233,"qtd":339,"grupo":"CALCA","genero":"MASCULINO"},{"produto":"TENIS KAAPUERA","faturamento":252954,"qtd":282,"grupo":"TENIS","genero":"FEMININO"},{"produto":"TENIS ARPX OUTDOOR","faturamento":250263,"qtd":279,"grupo":"TENIS","genero":"MASCULINO"},{"produto":"SANDALIA SLIDE TIRAS PIRARUCU","faturamento":249625,"qtd":125,"grupo":"SANDALIA","genero":"FEMININO"}],"grupos":[{"grupo":"TENIS","faturamento":11726900,"qtd":15300},{"grupo":"T-SHIRT MC","faturamento":10435502,"qtd":29176},{"grupo":"CALCA","faturamento":7617240,"qtd":8020},{"grupo":"VESTIDO","faturamento":6446380,"qtd":5140},{"grupo":"BERMUDA","faturamento":4323793,"qtd":6569},{"grupo":"CAMISA MC","faturamento":3276575,"qtd":4375},{"grupo":"BOLSAS","faturamento":3125537,"qtd":1821},{"grupo":"CAMISA ML","faturamento":2859527,"qtd":2926},{"grupo":"BLUSA MC","faturamento":2469907,"qtd":4731},{"grupo":"MACACAO","faturamento":2171471,"qtd":1493},{"grupo":"SHORT","faturamento":1722187,"qtd":2771},{"grupo":"SANDALIA","faturamento":1588340,"qtd":2320},{"grupo":"POLO MC","faturamento":1492735,"qtd":2405},{"grupo":"ACESSORIOS","faturamento":1341921,"qtd":2514},{"grupo":"BERMUDA SURF","faturamento":1336173,"qtd":3059},{"grupo":"BLUSA ML","faturamento":1309714,"qtd":1266},{"grupo":"BEACH SHORT","faturamento":1196296,"qtd":3068},{"grupo":"SUNGA","faturamento":1111017,"qtd":3611},{"grupo":"REGATA","faturamento":1044575,"qtd":2075},{"grupo":"SHORT SURF","faturamento":432072,"qtd":1046}],"pedidos":{"FRANQUIA JUIZ DE FORA II":[{"pedido":"83236","faturamento":938788},{"pedido":"83227","faturamento":403770},{"pedido":"83629","faturamento":195583},{"pedido":"83618","faturamento":50829}],"FRANQUIA PORTO VELHO":[{"pedido":"84079","faturamento":1551019},{"pedido":"83254","faturamento":1303428},{"pedido":"84103","faturamento":1179747},{"pedido":"83368","faturamento":1055561},{"pedido":"84096","faturamento":398552},{"pedido":"84052","faturamento":383739},{"pedido":"84112","faturamento":250289},{"pedido":"83930","faturamento":246778}],"FRANQUIA CURITIBA BARIGUI":[{"pedido":"83272","faturamento":2543608},{"pedido":"83231","faturamento":1032358}],"FRANQUIA CURITIBA BATEL":[{"pedido":"83273","faturamento":4279272},{"pedido":"83234","faturamento":1148203}],"FRANQUIA CAMPO GRANDE":[{"pedido":"83304","faturamento":1934182},{"pedido":"83516","faturamento":281778}],"FRANQUIA CAMPOS PELINCA":[{"pedido":"83718","faturamento":2437167},{"pedido":"83720","faturamento":457412}],"FRANQUIA GOIANIA FLAMB.":[{"pedido":"84086","faturamento":2425777},{"pedido":"83637","faturamento":1257562}],"FRANQUIA GOIANIA SHOP II":[{"pedido":"84152","faturamento":1258875},{"pedido":"83636","faturamento":549516}],"FRANQUIA TERESINA":[{"pedido":"84153","faturamento":1234199},{"pedido":"84160","faturamento":309911}],"FRANQUIA RIBEIRAO PRETO":[{"pedido":"84154","faturamento":1840430},{"pedido":"83344","faturamento":1609428},{"pedido":"83524","faturamento":1068558},{"pedido":"83563","faturamento":263562},{"pedido":"83289","faturamento":251714}],"FRANQUIA GOIANIA PARANHOS":[{"pedido":"84156","faturamento":957379},{"pedido":"83607","faturamento":331419}],"FRANQUIA JOAO PESSOA":[{"pedido":"83221","faturamento":895421},{"pedido":"83517","faturamento":196143}],"FRANQUIA MACEIO":[{"pedido":"83587","faturamento":957969},{"pedido":"83590","faturamento":227358}],"FRANQUIA ICARAI":[{"pedido":"83263","faturamento":1758351},{"pedido":"83345","faturamento":869525},{"pedido":"83527","faturamento":377617}],"FRANQUIA UBERLANDIA SHOPPING":[{"pedido":"83398","faturamento":352220},{"pedido":"83199","faturamento":269193},{"pedido":"83433","faturamento":235500},{"pedido":"83297","faturamento":54443}],"FRANQUIA PLAZA NITEROI":[{"pedido":"83978","faturamento":1385789},{"pedido":"84012","faturamento":455104},{"pedido":"84014","faturamento":409499}],"FRANQUIA UBERLANDIA":[{"pedido":"83305","faturamento":915954},{"pedido":"83337","faturamento":630939},{"pedido":"83262","faturamento":551480},{"pedido":"83476","faturamento":126197}],"FRANQUIA ARACAJU":[{"pedido":"83586","faturamento":720050},{"pedido":"83588","faturamento":196690},{"pedido":"83207","faturamento":15266}],"FRANQUIA CUIABA II":[{"pedido":"83806","faturamento":933140},{"pedido":"83828","faturamento":277540}],"FRANQUIA BALNEARIO AV BR":[{"pedido":"83314","faturamento":1781664},{"pedido":"83650","faturamento":284202}],"FRANQUIA FLORIPA BEIRAMAR":[{"pedido":"83319","faturamento":3114408},{"pedido":"83653","faturamento":494727}],"FRANQUIA FLORIPA VL ROMANA":[{"pedido":"83785","faturamento":1968524},{"pedido":"83788","faturamento":365879}],"FRANQUIA TRANCOSO II":[{"pedido":"84150","faturamento":4341083},{"pedido":"83290","faturamento":166596}],"FRANQUIA BALNEARIO CAMB.":[{"pedido":"83322","faturamento":1945890},{"pedido":"83656","faturamento":467771}],"FRANQUIA SANTOS":[{"pedido":"84155","faturamento":2753136},{"pedido":"84159","faturamento":289700},{"pedido":"84575","faturamento":5382}],"FRANQUIA NITEROI":[{"pedido":"83265","faturamento":1073809},{"pedido":"83346","faturamento":585385},{"pedido":"84042","faturamento":326865}],"FRANQUIA NATAL II":[{"pedido":"83498","faturamento":385269},{"pedido":"83909","faturamento":43267}]}};
+
+let DATA = JSON.parse(JSON.stringify(INITIAL_DATA));
+let pendingImport = null;
+let charts = {};
+
+const fmt = n => 'R$ ' + Math.round(n).toLocaleString('pt-BR');
+const fmtN = n => Math.round(n).toLocaleString('pt-BR');
+const pct = n => n.toFixed(1) + '%';
+
+function progColor(p){
+  if(p >= 100) return '#111111';
+  if(p >= 70) return '#666666';
+  return '#aaaaaa';
+}
+
+function switchTab(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function renderKPIs(){
+  const d = DATA;
+  const acima = d.franquias.filter(f=>f.atingimento>=100).length;
+  document.getElementById('kpi-grid').innerHTML = `
+    <div class="kpi highlight">
+      <div class="kpi-label">Faturamento total</div>
+      <div class="kpi-value" style="font-size:20px">${fmt(d.total_faturamento)}</div>
+      <div class="kpi-sub">${pct(d.total_atingimento)} da meta</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Meta total</div>
+      <div class="kpi-value" style="font-size:20px">${fmt(d.total_meta)}</div>
+      <div class="kpi-sub">Faltam ${fmt(Math.max(0, d.total_meta - d.total_faturamento))}</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Atingimento</div>
+      <div class="kpi-value" style="color:${progColor(d.total_atingimento)}">${pct(d.total_atingimento)}</div>
+      <div class="kpi-sub">${acima} de ${d.franquias.length} franquias acima de 100%</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Total de peças</div>
+      <div class="kpi-value">${fmtN(d.total_qtd)}</div>
+      <div class="kpi-sub">${d.franquias.length} franquias ativas</div>
+    </div>`;
+}
+
+function renderChartGrupos(){
+  const top10 = DATA.grupos.slice(0,10);
+  const ctx = document.getElementById('chart-grupos').getContext('2d');
+  if(charts.grupos) charts.grupos.destroy();
+  charts.grupos = new Chart(ctx,{
+    type:'doughnut',
+    data:{
+      labels: top10.map(g=>g.grupo),
+      datasets:[{data: top10.map(g=>g.faturamento),
+        backgroundColor:['#111111','#222222','#333333','#444444','#555555','#666666','#777777','#888888','#999999','#aaaaaa'],
+        borderWidth:2, borderColor:'#fff'}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:11,family:'DM Sans'},boxWidth:10,padding:8}},tooltip:{callbacks:{label:c=>` ${c.label}: ${fmt(c.raw)}`}}}}
+  });
+}
+
+function renderChartRanking(){
+  const top10 = [...DATA.franquias].sort((a,b)=>b.faturamento-a.faturamento).slice(0,10);
+  const labels = top10.map(f=>f.franquia.replace('FRANQUIA ',''));
+  const ctx = document.getElementById('chart-ranking').getContext('2d');
+  if(charts.ranking) charts.ranking.destroy();
+  charts.ranking = new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels,
+      datasets:[
+        {label:'Faturamento',data:top10.map(f=>f.faturamento),backgroundColor:'#111111',borderRadius:3},
+        {label:'Meta',data:top10.map(f=>f.meta),backgroundColor:'#cccccc',borderRadius:3}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      scales:{x:{ticks:{callback:v=>fmt(v),font:{size:10}},grid:{color:'#f0ede8'}},y:{ticks:{font:{size:10}}}},
+      plugins:{legend:{labels:{font:{size:11,family:'DM Sans'},boxWidth:10}},tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${fmt(c.raw)}`}}}}
+  });
+}
+
+function renderChartMeta(){
+  const sorted = [...DATA.franquias].sort((a,b)=>b.atingimento-a.atingimento);
+  const labels = sorted.map(f=>f.franquia.replace('FRANQUIA ',''));
+  const colors = sorted.map(f=> f.atingimento>=100?'#111111': f.atingimento>=70?'#666666':'#aaaaaa');
+  const ctx = document.getElementById('chart-meta').getContext('2d');
+  if(charts.meta) charts.meta.destroy();
+  charts.meta = new Chart(ctx,{
+    type:'bar',
+    data:{labels, datasets:[{label:'Atingimento %',data:sorted.map(f=>Math.min(f.atingimento,400)),backgroundColor:colors,borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',
+      scales:{
+        x:{ticks:{callback:v=>v+'%',font:{size:10}},grid:{color:'#f0ede8'},max:400},
+        y:{ticks:{font:{size:9}}}
+      },
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:c=>{const f=sorted[c.dataIndex]; return [` Atingimento: ${pct(f.atingimento)}`,` Fat: ${fmt(f.faturamento)}`,` Meta: ${fmt(f.meta)}`];}}}
+      }}
+  });
+}
+
+function renderFranquias(){
+  const q = document.getElementById('search-franquia').value.toLowerCase();
+  const gFilter = document.getElementById('filter-grupo-econ').value;
+  const sortBy = document.getElementById('sort-franquia').value;
+  let rows = [...DATA.franquias];
+  if(q) rows = rows.filter(f=>f.franquia.toLowerCase().includes(q));
+  if(gFilter) rows = rows.filter(f=>f.grupo===gFilter);
+  rows.sort((a,b)=>b[sortBy]-a[sortBy]);
+  
+  const pedidos = DATA.pedidos || {};
+  const tbody = document.getElementById('tbody-franquias');
+  tbody.innerHTML = rows.map((f,i)=>{
+    const peds = pedidos[f.franquia]||[];
+    const nPed = peds.length;
+    const p = Math.min(f.atingimento, 300);
+    const pW = Math.min(p/300*100,100);
+    const col = progColor(f.atingimento);
+    const rankClass = i<3?'top':'';
+    return `<tr>
+      <td><span class="rank ${rankClass}">${i+1}</span></td>
+      <td style="font-weight:500">${f.franquia.replace('FRANQUIA ','')}</td>
+      <td><span class="chip">${f.grupo||'–'}</span></td>
+      <td class="num">${nPed}</td>
+      <td class="num">${fmtN(f.qtd)}</td>
+      <td class="num" style="font-weight:500">${fmt(f.faturamento)}</td>
+      <td class="num" style="color:var(--muted)">${fmt(f.meta)}</td>
+      <td>
+        <div class="prog-wrap">
+          <div class="prog-bar"><div class="prog-fill" style="width:${pW}%;background:${col}"></div></div>
+          <span class="pct-label" style="color:${col}">${pct(f.atingimento)}</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function populateFilters(){
+  const gruposEcon = [...new Set(DATA.franquias.map(f=>f.grupo).filter(Boolean))].sort();
+  const selGE = document.getElementById('filter-grupo-econ');
+  gruposEcon.forEach(g=>{const o=document.createElement('option');o.value=g;o.textContent=g;selGE.appendChild(o);});
+  
+  const gruposProd = [...new Set(DATA.produtos.map(p=>p.grupo).filter(Boolean))].sort();
+  const selGP = document.getElementById('filter-grupo-prod');
+  gruposProd.forEach(g=>{const o=document.createElement('option');o.value=g;o.textContent=g;selGP.appendChild(o);});
+}
+
+function renderProdutos(){
+  const q = document.getElementById('search-produto').value.toLowerCase();
+  const gFilter = document.getElementById('filter-grupo-prod').value;
+  const genFilter = document.getElementById('filter-genero').value;
+  const sortBy = document.getElementById('sort-produto').value;
+  let rows = [...DATA.produtos];
+  if(q) rows = rows.filter(p=>p.produto.toLowerCase().includes(q));
+  if(gFilter) rows = rows.filter(p=>p.grupo===gFilter);
+  if(genFilter) rows = rows.filter(p=>p.genero===genFilter);
+  rows.sort((a,b)=>b[sortBy]-a[sortBy]);
+  
+  const totalFat = rows.reduce((s,r)=>s+r.faturamento,0)||1;
+  document.getElementById('prod-count').textContent = `${rows.length} produtos encontrados`;
+  
+  const genBadge = g=>g==='MASCULINO'?'g-masc':g==='FEMININO'?'g-fem':'g-uni';
+  
+  document.getElementById('tbody-produtos').innerHTML = rows.map((p,i)=>{
+    const pvMedio = p.qtd>0? Math.round(p.faturamento/p.qtd):0;
+    const share = p.faturamento/totalFat*100;
+    const pW = Math.min(share*3,100);
+    return `<tr>
+      <td><span class="rank ${i<3?'top':''}">${i+1}</span></td>
+      <td style="font-weight:500;font-size:12px">${p.produto}</td>
+      <td><span class="chip">${p.grupo||'–'}</span></td>
+      <td><span class="badge ${genBadge(p.genero)}">${p.genero||'–'}</span></td>
+      <td class="num">${fmtN(p.qtd)}</td>
+      <td class="num" style="font-weight:500">${fmt(p.faturamento)}</td>
+      <td class="num" style="color:var(--muted)">R$ ${fmtN(pvMedio)}</td>
+      <td>
+        <div class="prog-wrap">
+          <div class="prog-bar"><div class="prog-fill" style="width:${pW}%;background:#111"></div></div>
+          <span class="pct-label" style="color:var(--muted)">${share.toFixed(1)}%</span>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ===== IMPORT =====
+function dragOver(e){e.preventDefault();document.getElementById('upload-area').classList.add('drag')}
+function dragLeave(){document.getElementById('upload-area').classList.remove('drag')}
+function dropFile(e){e.preventDefault();dragLeave();const f=e.dataTransfer.files[0];if(f) processFile(f)}
+function handleFile(e){const f=e.target.files[0];if(f) processFile(f)}
+
+function processFile(file){
+  const status = document.getElementById('import-status');
+  status.innerHTML = '<div style="display:flex;align-items:center;gap:8px"><div class="spinner"></div> Processando planilha…</div>';
+  
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const wb = XLSX.read(e.target.result, {type:'array'});
+      const sheetNames = wb.SheetNames;
+      
+      const hasVendas = sheetNames.some(s=>s.includes('WISE'));
+      const hasPort = sheetNames.some(s=>s.includes('PORT'));
+      const hasMeta = sheetNames.some(s=>s.includes('META'));
+      
+      if(!hasVendas || !hasPort || !hasMeta){
+        status.innerHTML = `<div class="alert" style="background:#ececec;color:#444;border:1px solid #bbb">
+          ❌ Planilha inválida. Abas encontradas: <strong>${sheetNames.join(', ')}</strong><br>
+          Necessário: WISE - PROD POR CLIENTE, PORTFÓLIO, META</div>`;
+        return;
+      }
+      
+      const newData = parseXLSX(wb);
+      pendingImport = newData;
+      
+      const preview = document.getElementById('preview-card');
+      const content = document.getElementById('preview-content');
+      const f = newData;
+      content.innerHTML = `
+        <div class="kpi-grid" style="grid-template-columns:repeat(4,1fr)">
+          <div class="kpi"><div class="kpi-label">Faturamento</div><div class="kpi-value" style="font-size:16px">${fmt(f.total_faturamento)}</div></div>
+          <div class="kpi"><div class="kpi-label">Meta</div><div class="kpi-value" style="font-size:16px">${fmt(f.total_meta)}</div></div>
+          <div class="kpi"><div class="kpi-label">Atingimento</div><div class="kpi-value" style="font-size:16px;color:${progColor(f.total_atingimento)}">${pct(f.total_atingimento)}</div></div>
+          <div class="kpi"><div class="kpi-label">Franquias</div><div class="kpi-value" style="font-size:16px">${f.franquias.length}</div></div>
+        </div>`;
+      preview.style.display = 'block';
+      status.innerHTML = `<div class="alert success">✅ Planilha lida com sucesso — ${fmtN(f.total_qtd)} peças em ${f.franquias.length} franquias. Confirme abaixo para aplicar.</div>`;
+    }catch(err){
+      status.innerHTML = `<div class="alert" style="background:#ececec;color:#444;border:1px solid #bbb">❌ Erro ao processar: ${err.message}</div>`;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function parseXLSX(wb){
+  const metaSheet = wb.Sheets[wb.SheetNames.find(s=>s.includes('META'))];
+  const portSheet = wb.Sheets[wb.SheetNames.find(s=>s.includes('PORT'))];
+  const vendasSheet = wb.Sheets[wb.SheetNames.find(s=>s.includes('WISE'))];
+  
+  const metaRows = XLSX.utils.sheet_to_json(metaSheet,{header:1});
+  const portRows = XLSX.utils.sheet_to_json(portSheet,{header:1});
+  const vendasRows = XLSX.utils.sheet_to_json(vendasSheet,{header:1});
+  
+  const meta = {};
+  for(let i=1;i<metaRows.length;i++){
+    const r=metaRows[i]; if(r[1]&&r[2]) meta[String(r[1]).trim()]={grupo:String(r[0]||'').trim(),meta:parseFloat(r[2])||0};
+  }
+  
+  const portfolio = {};
+  for(let i=1;i<portRows.length;i++){
+    const r=portRows[i]; const ch=String(r[2]||'').trim();
+    if(ch) portfolio[ch]={produto:String(r[4]||'').trim(),pv:parseFloat(r[10])||0,grupo:String(r[13]||'').trim(),genero:String(r[12]||'').trim()};
+  }
+  
+  const vendasAgg = {};
+  const prodAgg = {};
+  const grupoAgg = {};
+  const pedidosAgg = {};
+  
+  for(const row of vendasRows){
+    const col0 = String(row[0]||'').trim();
+    if(!col0.startsWith('FRANQUIA')) continue;
+    const chave = String(row[28]||'').trim();
+    const qty = parseFloat(row[19])||0;
+    if(qty<=0||!chave) continue;
+    const port = portfolio[chave]||{};
+    const pv = port.pv||0;
+    const fat = qty*pv;
+    const prod = port.produto||chave;
+    const grupo = port.grupo||'';
+    const genero = port.genero||'';
+    const pedido = String(row[1]||'');
+    
+    if(!vendasAgg[col0]) vendasAgg[col0]={faturamento:0,qtd:0};
+    vendasAgg[col0].faturamento+=fat; vendasAgg[col0].qtd+=qty;
+    
+    if(!prodAgg[prod]) prodAgg[prod]={faturamento:0,qtd:0,grupo,genero};
+    prodAgg[prod].faturamento+=fat; prodAgg[prod].qtd+=qty;
+    
+    if(grupo){
+      if(!grupoAgg[grupo]) grupoAgg[grupo]={faturamento:0,qtd:0};
+      grupoAgg[grupo].faturamento+=fat; grupoAgg[grupo].qtd+=qty;
+    }
+    
+    if(!pedidosAgg[col0]) pedidosAgg[col0]={};
+    if(!pedidosAgg[col0][pedido]) pedidosAgg[col0][pedido]=0;
+    pedidosAgg[col0][pedido]+=fat;
+  }
+  
+  const franquias = Object.entries(vendasAgg).map(([f,d])=>({
+    franquia:f, grupo:meta[f]?.grupo||'',
+    faturamento:Math.round(d.faturamento), meta:Math.round(meta[f]?.meta||0),
+    atingimento:meta[f]?.meta? Math.round(d.faturamento/meta[f].meta*1000)/10:0,
+    qtd:Math.round(d.qtd)
+  })).sort((a,b)=>b.faturamento-a.faturamento);
+  
+  const produtos = Object.entries(prodAgg).map(([k,v])=>({produto:k,faturamento:Math.round(v.faturamento),qtd:Math.round(v.qtd),grupo:v.grupo,genero:v.genero})).sort((a,b)=>b.faturamento-a.faturamento);
+  const grupos = Object.entries(grupoAgg).map(([k,v])=>({grupo:k,faturamento:Math.round(v.faturamento),qtd:Math.round(v.qtd)})).sort((a,b)=>b.faturamento-a.faturamento);
+  const pedidos = {};
+  for(const [f,peds] of Object.entries(pedidosAgg)){
+    pedidos[f]=Object.entries(peds).map(([p,fat])=>({pedido:p,faturamento:Math.round(fat)})).sort((a,b)=>b.faturamento-a.faturamento);
+  }
+  
+  const totalFat = franquias.reduce((s,f)=>s+f.faturamento,0);
+  const totalMeta = Object.values(meta).reduce((s,m)=>s+m.meta,0);
+  return{total_faturamento:totalFat, total_meta:Math.round(totalMeta), total_atingimento:totalMeta? Math.round(totalFat/totalMeta*1000)/10:0, total_qtd:franquias.reduce((s,f)=>s+f.qtd,0), franquias, produtos, grupos, pedidos};
+}
+
+function applyImport(){
+  if(!pendingImport) return;
+  DATA = pendingImport;
+  pendingImport = null;
+  renderAll();
+  document.getElementById('preview-card').style.display='none';
+  document.getElementById('import-status').innerHTML='<div class="alert success">✅ Dashboard atualizado com sucesso!</div>';
+  showFloat('Dashboard atualizado!');
+}
+
+function showFloat(msg){
+  const el=document.getElementById('float-msg');
+  el.textContent=msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),2500);
+}
+
+function renderAll(){
+  renderKPIs();
+  renderChartGrupos();
+  renderChartRanking();
+  renderChartMeta();
+  populateFilters();
+  renderFranquias();
+  renderProdutos();
+}
+
+renderAll();
+</script>
+</body>
+</html>
