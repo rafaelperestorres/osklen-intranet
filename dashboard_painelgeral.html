@@ -642,8 +642,10 @@ function renderPO(){
   const poAll=fF(DB.po);
   const fc=DB.forecast;
 
-  // Último mês com faturamento em 2026
-  const allMeses=[...new Set(fat26.map(r=>r.mes))].sort((a,b)=>a-b);
+  // Último mês com faturamento em 2026 — sempre usa dados sem filtro de mês
+  // para garantir que o eixo do gráfico mostre até o mês da última importação
+  const fat26Raw=fF(DB.faturamento.filter(r=>r.ano===2026)); // sem SEL_MES aplicado ao cálculo do limite
+  const allMeses=[...new Set(fat26Raw.map(r=>r.mes))].sort((a,b)=>a-b);
   const lastMes=allMeses.length>0?allMeses[allMeses.length-1]:12;
   // Aplica filtro de mês se selecionado
   const mesesAtivos=SEL_MES.length>0?SEL_MES:null;
@@ -713,14 +715,22 @@ function renderPO(){
       <div class="kpi-meta-val" >(venda − custo) ÷ venda</div>
     </div>`;
 
+  // Mostra barras/linha apenas até o último mês com dados (lastMes já definido acima)
+  const fMvis = fM.map((v,i) => i+1 <= lastMes ? Math.round(v) : null);
+  const pMvis = pM.map((v,i) => i+1 <= lastMes ? Math.round(v) : null);
+
   mk('ch-po-mensal',{type:'bar',data:{labels:MO,datasets:[
-    {label:'Realizado',data:fM.map(v=>Math.round(v)),backgroundColor:'#111',borderRadius:3,order:1},
-    {label:'Meta PO',data:pM.map(v=>Math.round(v)),type:'line',borderColor:'#999',borderWidth:2,borderDash:[5,4],pointRadius:4,pointBackgroundColor:'#999',fill:false,tension:0,order:0}
-  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>BRL(ctx.parsed.y)}}},scales:{x:sX(),y:sY(1000)}}});
+    {label:'Realizado',data:fMvis,backgroundColor:'#111',borderRadius:3,order:1},
+    {label:'Meta PO',data:pMvis,type:'line',borderColor:'#999',borderWidth:2,borderDash:[5,4],pointRadius:4,pointBackgroundColor:'#999',fill:false,tension:0,order:0,spanGaps:false}
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.y!=null?BRL(ctx.parsed.y):''}}},scales:{x:sX(),y:sY(1000)}}});
+
+  // Forecast: barras e linha apenas até o mês vigente
+  const fMvisFC = fM.map((v,i) => i+1 <= lastMes ? Math.round(v) : null);
+  const fcMvis  = fcM.map((v,i) => i+1 <= lastMes ? v : null);
 
   mk('ch-fc-mensal',{type:'bar',data:{labels:MO,datasets:[
-    {label:'Realizado',data:fM.map(v=>Math.round(v)),backgroundColor:'#111',borderRadius:3,order:1},
-    {label:'Forecast',data:fcM,type:'line',borderColor:'#999',borderWidth:2,borderDash:[5,4],pointRadius:4,pointBackgroundColor:'#999',fill:false,tension:0,order:0,spanGaps:false}
+    {label:'Realizado',data:fMvisFC,backgroundColor:'#111',borderRadius:3,order:1},
+    {label:'Forecast',data:fcMvis,type:'line',borderColor:'#999',borderWidth:2,borderDash:[5,4],pointRadius:4,pointBackgroundColor:'#999',fill:false,tension:0,order:0,spanGaps:false}
   ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.y!=null?BRL(ctx.parsed.y):'N/D'}}},scales:{x:sX(),y:sY(1000)}}});
 
   const vM={};DB.validacao.forEach(r=>vM[r.franquia]=r);
