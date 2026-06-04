@@ -305,6 +305,13 @@ tbody tr:hover td{background:var(--gray-50)}
         <div id="grupo-bars" style="display:flex;flex-direction:column;gap:8px;max-height:240px;overflow-y:auto"></div>
       </div>
     </div>
+    <div class="tcard" style="margin-top:16px">
+      <div class="tcard-head" style="display:flex;align-items:center;justify-content:space-between">
+        <span class="tcard-title">Desempenho por Franquia — 2026</span>
+        <span style="font-size:11px;color:var(--gray-500)" id="tabela-franquia-sub">Acumulado · todos os gêneros</span>
+      </div>
+      <div class="tscroll"><table id="t-franquia"></table></div>
+    </div>
   </section>
   <!-- CRESCIMENTO PANE -->
   <section class="pane" id="pane-cresc">
@@ -797,6 +804,7 @@ function renderPO() {
   ]},options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:28}},plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){ return ctx.parsed.y!=null?BRL(ctx.parsed.y):'N/D'; }}}},scales:{x:sX(),y:sY(1000)}},plugins:[fcPctPlugin]});
 
   renderGenero(fat26acc);
+  renderTabelaFranquia(fat26acc);
 }
 
 // ── GENERO + GRUPO ────────────────────────────────────────────────────────────
@@ -860,6 +868,7 @@ function renderGenero(fatRows) {
   var tag = document.getElementById('grupo-genero-tag');
   if (tag) tag.style.display = SEL_GENERO_VAL.length > 0 ? 'inline-flex' : 'none';
   renderGrupo(fatRows);
+  renderTabelaFranquia(fatRows);
 }
 
 function renderGrupo(fatRows) {
@@ -893,6 +902,95 @@ function renderGrupo(fatRows) {
 }
 
 // ── RENDER CRESCIMENTO ────────────────────────────────────────────────────────
+function renderTabelaFranquia(fatRows) {
+  // Apply genero filter
+  var rows = SEL_GENERO_VAL.length > 0
+    ? fatRows.filter(function(r){ return SEL_GENERO_VAL.indexOf((r.genero||'').trim())!==-1; })
+    : fatRows;
+
+  // Aggregate by franquia
+  var agg = {};
+  rows.forEach(function(r) {
+    var f = r.franquia;
+    if (!agg[f]) agg[f] = {franquia:f, valor:0, qtde:0};
+    agg[f].valor += r.valor;
+    agg[f].qtde  += r.qtde;
+  });
+
+  // Determine which months are present in fatRows (same period as faturamento)
+  var mesesNoRows = {};
+  rows.forEach(function(r){ mesesNoRows[r.mes] = 1; });
+  // If no month filter active, use lastMes from 2026 data to cap PO
+  var fat26All = fF(DB.faturamento.filter(function(r){ return r.ano===2026; }));
+  var lastMesTab = fat26All.length > 0 ? Math.max.apply(null, fat26All.map(function(r){ return r.mes; })) : 12;
+  var mesesAtivosTab = SEL_MES.length > 0 ? SEL_MES : null;
+
+  // PO by franquia filtered to same period
+  var poAll = fF(DB.po);
+  var poByF = {};
+  poAll.forEach(function(r){
+    var incluir = mesesAtivosTab ? (SEL_MES.indexOf(r.mes) !== -1) : (r.mes <= lastMesTab);
+    if (incluir) poByF[r.franquia] = (poByF[r.franquia]||0) + r.po;
+  });
+
+  // Build rows sorted by valor desc
+  var trows = objValues(agg).sort(function(a,b){ var pctA=poByF[a.franquia]>0?a.valor/poByF[a.franquia]:0; var pctB=poByF[b.franquia]>0?b.valor/poByF[b.franquia]:0; return pctB-pctA; });
+
+  // Totals
+  var totValor = 0, totQtde = 0, totPO = 0;
+  trows.forEach(function(r){
+    totValor += r.valor;
+    totQtde  += r.qtde;
+    totPO    += poByF[r.franquia]||0;
+  });
+
+  // Update subtitle
+  var sub = document.getElementById('tabela-franquia-sub');
+  if (sub) {
+    var lbl = SEL_GENERO_VAL.length > 0 ? ('Gênero: ' + SEL_GENERO_VAL.join(', ')) : 'Todos os gêneros';
+    sub.textContent = 'Acumulado · ' + lbl;
+  }
+
+  var h = '<thead><tr>' +
+    '<th>Franquia</th>' +
+    '<th class="r">Meta PO</th>' +
+    '<th class="r">Faturado</th>' +
+    '<th class="r">Ating.%</th>' +
+    '<th class="r">Qtde</th>' +
+    '<th class="r">Custo Médio</th>' +
+    '</tr></thead><tbody>';
+
+  trows.forEach(function(r) {
+    var po   = poByF[r.franquia] || 0;
+    var pct  = po > 0 ? (r.valor / po * 100) : 0;
+    var cmed = r.qtde > 0 ? (r.valor / r.qtde) : 0;
+    var pctCls = pct >= 100 ? 'pos' : pct >= 75 ? '' : 'neg';
+    h += '<tr>' +
+      '<td>' + r.franquia.replace('FRANQUIA ','') + '</td>' +
+      '<td class="r">' + BRLM(po) + '</td>' +
+      '<td class="r">' + BRLM(r.valor) + '</td>' +
+      '<td class="r ' + pctCls + '">' + pct.toFixed(1) + '%</td>' +
+      '<td class="r">' + N(r.qtde) + '</td>' +
+      '<td class="r">' + BRL(cmed) + '</td>' +
+      '</tr>';
+  });
+
+  // Totals row
+  var totPct  = totPO > 0 ? (totValor / totPO * 100) : 0;
+  var totCmed = totQtde > 0 ? (totValor / totQtde) : 0;
+  h += '<tr style="font-weight:600;background:var(--gray-50);border-top:2px solid var(--gray-200)">' +
+    '<td>Total</td>' +
+    '<td class="r">' + BRLM(totPO) + '</td>' +
+    '<td class="r">' + BRLM(totValor) + '</td>' +
+    '<td class="r ' + (totPct>=100?'pos':totPct>=75?'':'neg') + '">' + totPct.toFixed(1) + '%</td>' +
+    '<td class="r">' + N(totQtde) + '</td>' +
+    '<td class="r">' + BRL(totCmed) + '</td>' +
+    '</tr>';
+
+  h += '</tbody>';
+  document.getElementById('t-franquia').innerHTML = h;
+}
+
 function renderCresc() {
   var f25=fF(DB.faturamento.filter(function(r){ return r.ano===2025; }));
   var f26=fF(DB.faturamento.filter(function(r){ return r.ano===2026; }));
