@@ -161,10 +161,10 @@
           <i class="ti ti-chevron-right db-nav-arrow"></i>
         </div>
         <div class="db-nav-submenu open">
-          <a class="db-nav-subitem active" onclick="loadModule(this, 'https://rafaelperestorres.github.io/osklen-intranet/dashboard_painelgeral.html', 'FATURAMENTO', '')">
+          <a class="db-nav-subitem active" onclick="loadModule(this, 'https://osklen-intranet.vercel.app/dashboard_painelgeral.html', 'FATURAMENTO', '')">
             <i class="ti ti-layout-dashboard"></i> Faturamento
           </a>
-          <a class="db-nav-subitem" onclick="loadModule(this, 'https://rafaelperestorres.github.io/osklen-intranet/dashboard_faturamento.html', 'ENTREGAS', '')">
+          <a class="db-nav-subitem" onclick="loadModule(this, 'https://osklen-intranet.vercel.app/dashboard_faturamento.html', 'ENTREGAS', '')">
             <i class="ti ti-truck"></i> Entregas
           </a>
           <div class="db-nav-subitem pending">
@@ -174,12 +174,12 @@
         </div>
 
         <!-- Sell Out -->
-        <a class="db-nav-item" onclick="loadModule(this, 'https://rafaelperestorres.github.io/osklen-intranet/dashboard_vendas.html', 'SELL OUT', '')">
+        <a class="db-nav-item" onclick="loadModule(this, 'https://osklen-intranet.vercel.app/dashboard_vendas.html', 'SELL OUT', '')">
           <i class="ti ti-chart-bar"></i> Sell Out
         </a>
 
         <!-- Financeiro -->
-        <a class="db-nav-item" onclick="loadModule(this, 'https://rafaelperestorres.github.io/osklen-intranet/fluxo_pagamentos.html', 'FINANCEIRO', '')">
+        <a class="db-nav-item" onclick="loadModule(this, 'https://osklen-intranet.vercel.app/fluxo_pagamentos.html', 'FINANCEIRO', '')">
           <i class="ti ti-coin"></i> Financeiro
         </a>
         <!-- Showroom (expansível) -->
@@ -188,7 +188,7 @@
           <i class="ti ti-chevron-right db-nav-arrow"></i>
         </div>
         <div class="db-nav-submenu">
-          <a class="db-nav-subitem" onclick="loadModule(this, 'https://rafaelperestorres.github.io/osklen-intranet/dashboard_wise.html', 'WISE', '')">
+          <a class="db-nav-subitem" onclick="loadModule(this, 'https://osklen-intranet.vercel.app/dashboard_wise.html', 'WISE', '')">
             <i class="ti ti-brain"></i> Wise
           </a>
           <div class="db-nav-subitem pending">
@@ -329,7 +329,7 @@
       document.getElementById('topbar-avatar').textContent = initials;
       document.getElementById('page-title').textContent = 'FATURAMENTO';
       const frame = document.getElementById('module-frame');
-      frame.src = 'https://rafaelperestorres.github.io/osklen-intranet/dashboard_painelgeral.html';
+      frame.src = 'https://osklen-intranet.vercel.app/dashboard_painelgeral.html';
       frame.style.display = 'block';
       document.getElementById('vendas-panel').style.display = 'none';
     } else {
