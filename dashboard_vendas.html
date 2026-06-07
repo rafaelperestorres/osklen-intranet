@@ -30,43 +30,63 @@
   .page { padding: 16px 20px 32px; }
 
   /* ── FILTER BAR ── */
+  /* ── FILTER BAR ── */
   .filter-bar {
-    background: var(--white); border: 0.5px solid var(--border);
-    border-radius: 8px; padding: 12px 16px; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    background: var(--white); border-bottom: 1px solid var(--border);
+    padding: 10px 20px; margin-bottom: 14px;
+    position: sticky; top: 0; z-index: 50;
   }
-  .filter-top { display: flex; align-items: flex-start; gap: 10px; flex-wrap: nowrap; }
-  .filter-fields { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
-  .fg { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 110px; }
-  .fl { font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; }
+  .filter-bar-left { display: flex; align-items: center; gap: 8px; flex: 1; flex-wrap: wrap; }
+  .filter-bar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .filter-divider { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; }
+
+  .fg { display: flex; flex-direction: column; gap: 2px; min-width: 100px; }
+  .fl { font-size: 9px; color: var(--text-hint); font-weight: 600; text-transform: uppercase; letter-spacing: 0.7px; }
   .ms-wrap { position: relative; }
   .ms-trigger {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 5px 8px; border: 0.5px solid var(--border); border-radius: 5px;
-    background: var(--white); cursor: pointer; min-height: 30px; font-size: 12px;
-    color: var(--text); user-select: none; gap: 6px;
+    padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--surface); cursor: pointer; min-height: 30px; min-width: 90px;
+    font-size: 12px; color: var(--text); user-select: none; gap: 6px;
+    transition: border-color 0.15s, background 0.15s;
   }
-  .ms-trigger:hover { border-color: #999; }
-  .ms-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .ms-actions { display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
-  .ms-clear { font-size: 13px; color: var(--text-hint); cursor: pointer; padding: 1px 2px; border-radius: 2px; }
+  .ms-trigger:hover { border-color: #999; background: var(--white); }
+  .ms-trigger.has-selection { border-color: var(--black); background: var(--white); }
+  .ms-label { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+  .ms-actions { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+  .ms-clear { font-size: 12px; color: var(--text-hint); cursor: pointer; padding: 1px 2px; border-radius: 2px; line-height: 1; }
   .ms-clear:hover { color: var(--text); background: var(--border-light); }
   .ms-dropdown {
-    position: absolute; top: calc(100% + 3px); left: 0; right: 0;
-    background: var(--white); border: 0.5px solid var(--border);
-    border-radius: 7px; z-index: 999; overflow: hidden; min-width: 165px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    position: absolute; top: calc(100% + 4px); left: 0;
+    background: var(--white); border: 1px solid var(--border);
+    border-radius: 8px; z-index: 999; overflow: hidden; min-width: 180px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.10);
   }
-  .ms-header { display: flex; align-items: center; gap: 6px; padding: 7px 8px; border-bottom: 0.5px solid var(--border-light); background: var(--surface); }
-  .ms-search { flex: 1; border: 0.5px solid var(--border); border-radius: 4px; padding: 4px 7px; font-size: 11px; outline: none; font-family: inherit; background: var(--white); }
-  .ms-btn-all { font-size: 10px; padding: 4px 8px; border: 0.5px solid var(--border); border-radius: 3px; background: var(--white); cursor: pointer; white-space: nowrap; font-family: inherit; color: var(--text); }
-  .ms-btn-all:hover { background: var(--bg); }
-  .ms-list { max-height: 165px; overflow-y: auto; }
-  .ms-item { display: flex; align-items: center; gap: 8px; padding: 6px 9px; font-size: 12px; cursor: pointer; }
+  .ms-header { display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--border-light); background: var(--surface); }
+  .ms-btn-all { font-size: 11px; padding: 4px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--white); cursor: pointer; white-space: nowrap; font-family: inherit; color: var(--text); font-weight: 500; }
+  .ms-btn-all:hover { background: var(--black); color: #fff; border-color: var(--black); }
+  .ms-btn-clear { font-size: 11px; padding: 4px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--white); cursor: pointer; white-space: nowrap; font-family: inherit; color: var(--text); font-weight: 500; display: flex; align-items: center; justify-content: center; margin-left: auto; }
+  .ms-btn-clear:hover { background: var(--black); color: #fff; border-color: var(--black); }
+  .ms-list { max-height: 200px; overflow-y: auto; }
+  .ms-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; font-size: 12px; cursor: pointer; }
   .ms-item:hover { background: var(--surface); }
   .ms-item input[type=checkbox] { accent-color: var(--black); width: 13px; height: 13px; cursor: pointer; flex-shrink: 0; }
 
-  /* upload button */
-  .upload-group { display: flex; flex-direction: column; align-self: flex-end; flex-shrink: 0; }
+  /* toggle All/SSS */
+  .toggle-group { display: flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .tbtn { padding: 5px 12px; font-size: 12px; font-weight: 500; border: none; cursor: pointer; background: var(--surface); color: var(--text-muted); font-family: inherit; transition: all 0.15s; }
+  .tbtn.active { background: var(--black); color: #fff; }
+  .tbadge { display: inline-flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.15); color: inherit; border-radius: 8px; font-size: 10px; padding: 1px 5px; margin-left: 4px; min-width: 18px; }
+  .tbtn.active .tbadge { background: rgba(255,255,255,0.25); }
+
+  /* pills */
+  .pills-wrap { display: flex; flex-wrap: wrap; gap: 4px; }
+  .af-pill { display: flex; align-items: center; gap: 3px; background: var(--black); color: #fff; border-radius: 20px; padding: 2px 8px 2px 10px; font-size: 11px; }
+  .af-pill button { background: none; border: none; cursor: pointer; color: rgba(255,255,255,0.7); font-size: 12px; line-height: 1; padding: 0 1px; display: flex; align-items: center; }
+  .af-pill button:hover { color: #fff; }
+
+  
   .btn-upload {
     display: flex; align-items: center; gap: 7px;
     padding: 7px 15px; background: var(--black); color: #fff;
@@ -78,7 +98,7 @@
   .upload-meta { font-size: 10px; color: var(--text-hint); margin-top: 3px; }
 
   /* toggle + pills */
-  .filter-bottom { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+
   .toggle-group { display: flex; border: 0.5px solid var(--border); border-radius: 5px; overflow: hidden; }
   .tbtn { padding: 5px 13px; font-size: 12px; border: none; cursor: pointer; background: var(--white); color: var(--text-muted); font-family: inherit; font-weight: 500; }
   .tbtn.active { background: var(--black); color: #fff; }
@@ -105,7 +125,7 @@
   .pb-fill.over { background: var(--green); }
 
   /* ── CHARTS ── */
-  .charts-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 12px; }
+  .charts-row { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 12px; }
   .cc { background: var(--white); border: 0.5px solid var(--border); border-radius: 8px; padding: 14px; }
   .ct { font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.4px; }
   .leg { display: flex; gap: 14px; margin-top: 8px; font-size: 11px; color: var(--text-hint); flex-wrap: wrap; }
@@ -123,6 +143,15 @@
   .pct-miss { color: var(--red); font-weight: 700; }
 
   /* ── GENDER & GROUP PANELS ── */
+  .btn-gender-clear {
+    font-size: 11px; padding: 3px 10px;
+    border: 1px solid var(--border); border-radius: 4px;
+    background: var(--white); cursor: pointer;
+    font-family: inherit; font-weight: 500; color: var(--text);
+    display: none; transition: background 0.15s, color 0.15s;
+  }
+  .btn-gender-clear:hover { background: var(--black); color: #fff; border-color: var(--black); }
+
   .analysis-row { display: grid; grid-template-columns: 340px 1fr; gap: 10px; margin-bottom: 12px; }
   .gender-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 13px; border-radius: 20px; border: 1.5px solid transparent; cursor: pointer; font-size: 12px; font-weight: 600; transition: all 0.15s; background: var(--surface); color: var(--text-muted); border-color: var(--border); }
   .gender-chip:hover { border-color: #888; color: var(--text); }
@@ -189,27 +218,37 @@
 
   <!-- FILTER BAR -->
   <div class="filter-bar">
-    <div class="filter-top">
-      <div class="filter-fields" id="filter-row"></div>
-      <div class="upload-group">
-        <div class="fl" style="margin-bottom:4px">Dados</div>
-        <button class="btn-upload" id="btn-upload" onclick="openModal()">
-          <i class="ti ti-file-spreadsheet" style="font-size:15px"></i>
-          Atualizar planilha
-        </button>
-        <div class="upload-meta" id="upload-meta">Nenhum arquivo importado</div>
-      </div>
-    </div>
-    <div class="filter-bottom">
-      <div>
-        <div class="fl" style="margin-bottom:4px">Visão</div>
+
+    <!-- Filters -->
+    <div class="filter-bar-left">
+      <div id="filter-row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end"></div>
+
+      <div class="filter-divider"></div>
+
+      <!-- All / SSS -->
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <span class="fl">Visão</span>
         <div class="toggle-group">
           <button class="tbtn active" id="btn-all" onclick="setMode('all')">All <span class="tbadge" id="cnt-all">5</span></button>
           <button class="tbtn" id="btn-sss" onclick="setMode('sss')">SSS <span class="tbadge" id="cnt-sss">3</span></button>
         </div>
       </div>
+
+      <!-- Active pills -->
       <div class="pills-wrap" id="active-pills"></div>
     </div>
+
+    <!-- Right: upload -->
+    <div class="filter-bar-right">
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+        <button class="btn-upload" id="btn-upload" onclick="openModal()">
+          <i class="ti ti-file-spreadsheet" style="font-size:14px"></i>
+          Atualizar planilha
+        </button>
+        <span class="upload-meta" id="upload-meta" style="font-size:10px;color:var(--text-hint)">Nenhum arquivo importado</span>
+      </div>
+    </div>
+
   </div>
 
   <!-- METRICS -->
@@ -233,22 +272,7 @@
         <span class="leg-item"><span class="leg-dash"></span>2024</span>
       </div>
     </div>
-    <div class="cc">
-      <div class="ct">Ticket médio &amp; PA</div>
-      <div style="position:relative;height:185px"><canvas id="cTicket" role="img" aria-label="Ticket médio e PA">Gráfico de ticket e PA.</canvas></div>
-      <div class="leg">
-        <span class="leg-item"><span class="leg-sq" style="background:#1a1a18"></span>Ticket médio</span>
-        <span class="leg-item"><span class="leg-dash"></span>PA</span>
-      </div>
-    </div>
-    <div class="cc">
-      <div class="ct">Margem % &amp; mark-up</div>
-      <div style="position:relative;height:185px"><canvas id="cMargem" role="img" aria-label="Margem e mark-up">Gráfico de margem e markup.</canvas></div>
-      <div class="leg">
-        <span class="leg-item"><span class="leg-sq" style="background:#1a1a18"></span>Margem %</span>
-        <span class="leg-item"><span class="leg-dash"></span>Mark-up</span>
-      </div>
-    </div>
+
   </div>
 
   <!-- GENDER & GROUP ROW -->
@@ -256,8 +280,10 @@
 
     <!-- GENDER DONUT -->
     <div class="cc">
-      <div class="ct" style="margin-bottom:10px">Participação por gênero</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px" id="gender-chips"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div class="ct" style="margin-bottom:0">Participação por gênero</div>
+        <button class="btn-gender-clear" id="btn-clear-gender" onclick="clearGender()">Limpar</button>
+      </div>
       <div style="position:relative;height:200px;display:flex;align-items:center;justify-content:center">
         <canvas id="cGenero" role="img" aria-label="Gráfico de participação por gênero">Participação por gênero.</canvas>
         <div id="donut-center" style="position:absolute;text-align:center;pointer-events:none">
@@ -265,6 +291,10 @@
           <div style="font-size:10px;color:#999" id="donut-lbl">Total</div>
         </div>
       </div>
+      <!-- Legend -->
+      <div id="gender-legend" style="display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:14px;padding-top:10px;border-top:0.5px solid var(--border-light)"></div>
+      <!-- Chips (hidden, kept for filter logic) -->
+      <div id="gender-chips" style="display:none"></div>
     </div>
 
     <!-- PRODUCT GROUPS -->
@@ -388,7 +418,15 @@ const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov'
 const sum = a => a.reduce((s,v)=>s+v,0);
 const avg = a => a.length ? sum(a)/a.length : 0;
 const pct = (a,b) => b ? ((a-b)/b*100).toFixed(1) : '0.0';
-const fmtK = n => 'R$\u00a0'+(n/1000000).toFixed(2)+'M';
+// Adaptive number formatter for cards
+const fmtAdapt = n => {
+  if(!n && n !== 0) return 'N/D';
+  const abs = Math.abs(n);
+  if(abs >= 1000000) return 'R$\u00a0' + (n/1000000).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) + 'M';
+  if(abs >= 1000)    return 'R$\u00a0' + (n/1000).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}) + 'K';
+  return 'R$\u00a0' + n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+};
+const fmtK   = fmtAdapt;  // legacy alias
 const fmtBRL = n => n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
 // labels for chart x-axis: months selected, in order
@@ -432,24 +470,22 @@ function buildMultiSelect(f) {
   const trigger = document.createElement('div'); trigger.className = 'ms-trigger';
   trigger.innerHTML = `<span class="ms-label" id="lbl-${f.id}">${getLabelText(f)}</span>
     <span class="ms-actions">
-      <span class="ms-clear" onclick="clearFilter(event,'${f.id}')"><i class="ti ti-x" style="font-size:12px"></i></span>
       <span style="color:#aaa"><i class="ti ti-chevron-down" style="font-size:12px"></i></span>
     </span>`;
-  trigger.addEventListener('click', e => { if(e.target.closest('.ms-clear')) return; toggleDropdown(f.id); });
+  trigger.addEventListener('click', e => { if(e.target.closest('.ms-btn-clear')) return; toggleDropdown(f.id); });
   wrap.appendChild(trigger);
   const drop = document.createElement('div'); drop.className = 'ms-dropdown'; drop.id = 'drop-'+f.id; drop.style.display = 'none';
   drop.innerHTML = `<div class="ms-header">
-    <input class="ms-search" type="text" placeholder="Buscar..." oninput="filterSearch('${f.id}')" id="srch-${f.id}">
     <button class="ms-btn-all" onclick="selectAll('${f.id}')">Todos</button>
+    <button class="ms-btn-clear" onclick="clearFilter(event,'${f.id}')">Limpar</button>
   </div><div class="ms-list" id="list-${f.id}"></div>`;
   wrap.appendChild(drop); renderList(f);
 }
 function renderList(f) {
   const list = document.getElementById('list-'+f.id);
-  const srch = (document.getElementById('srch-'+f.id)||{}).value||'';
-  const items = f.opts.filter(o=>o.toLowerCase().includes(srch.toLowerCase()));
+  const items = f.opts;
   list.innerHTML = items.map(o=>`<label class="ms-item">
-    <input type="checkbox" ${state[f.id].includes(o)?'checked':''} onchange="toggleOpt('${f.id}','${o}',this.checked)">
+    <input type="checkbox" ${state[f.id].includes(String(o))?'checked':''} onchange="toggleOpt('${f.id}','${String(o)}',this.checked)">
     <span>${o}</span></label>`).join('');
 }
 function getLabelText(f) {
@@ -465,7 +501,7 @@ function toggleDropdown(id) {
   if(openDropdown && openDropdown !== id) document.getElementById('drop-'+openDropdown).style.display = 'none';
   drop.style.display = isOpen ? 'none' : 'block';
   openDropdown = isOpen ? null : id;
-  if(!isOpen) { const s = document.getElementById('srch-'+id); if(s) setTimeout(()=>s.focus(),50); }
+
 }
 document.addEventListener('click', e => {
   if(openDropdown && !e.target.closest('#wrap-'+openDropdown)) {
@@ -483,7 +519,7 @@ function clearFilter(e, fid) {
   if(openDropdown===fid) { document.getElementById('drop-'+fid).style.display='none'; openDropdown=null; }
   updateFilter(fid);
 }
-function filterSearch(fid) { renderList(FILTERS.find(x=>x.id===fid)); }
+function filterSearch(fid) { /* search removed */ }
 function updateFilter(fid) {
   const f = FILTERS.find(x=>x.id===fid);
   document.getElementById('lbl-'+fid).innerHTML = getLabelText(f);
@@ -526,17 +562,16 @@ function renderMetrics() {
   const prodRows  = getFilteredPROD();
   // Note: Custo 2026 not aggregated in prod records (dropped during group-by) – show from prod sheet venda
   const prodVenda = prodRows.reduce((s,r)=>s+r.venda,0);
-  const fmtM      = n => 'R$ '+(n/1000000).toFixed(2)+'M';
-  const fmtN      = n => n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fmtUnit = n => n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 
   const metrics = [
-    { l:'Venda total',      v:fmtM(venda),  s:'Período selecionado',  vs:'', up:true, prog: meta ? Math.min(parseFloat(ating),120) : 0 },
+    { l:'Venda total',      v:fmtAdapt(venda),  s:'Período selecionado',  vs:'', up:true, prog: meta ? Math.min(parseFloat(ating),120) : 0 },
     { l:'Atingimento',      v: meta ? ating+'%' : 'N/D', s: meta ? (isOver?'Meta atingida':'Abaixo da meta') : 'Meta não cadastrada', vs:'', up:isOver, prog: meta ? Math.min(parseFloat(ating),120) : 0, ating:true },
     { l:'Qtd. peças',       v:Math.round(pecas).toLocaleString('pt-BR'), s:'Período selecionado', vs:'', up:true },
     { l:'Ticket (atend.)',  v:Math.round(tickAt).toLocaleString('pt-BR'), s:'Atendimentos', vs:'', up:true },
-    { l:'Ticket médio',     v:'R$ '+fmtN(tickM), s:'Venda ÷ Atendimentos', vs:'', up:true },
-    { l:'PA',               v:fmtN(paVal), s:'Peças ÷ Atendimentos', vs:'', up:true },
-    { l:'Preço médio venda',v:'R$ '+fmtN(pmv), s:'Venda ÷ Peças', vs:'', up:true },
+    { l:'Ticket médio',     v:fmtAdapt(tickM), s:'Venda ÷ Atendimentos', vs:'', up:true },
+    { l:'PA',               v:fmtUnit(paVal), s:'Peças ÷ Atendimentos', vs:'', up:true },
+    { l:'Preço médio venda',v:fmtAdapt(pmv), s:'Venda ÷ Peças', vs:'', up:true },
     { l:'Margem atual',     v:'N/D', s:'Sem custo cadastrado', vs:'', up:true },
     { l:'Mark-up de venda', v:'N/D', s:'Sem custo cadastrado', vs:'', up:true },
   ];
@@ -579,7 +614,7 @@ function renderDailyTable() {
   // totals strip
   totEl.style.display = 'grid';
   totEl.innerHTML = [
-    { l:'Total vendido',  v: fmtBRL(totalVenda), color:'' },
+    { l:'Total vendido',  v: fmtAdapt(totalVenda), color:'' },
     { l:'Total meta',     v: 'N/D',               color:'color:#999' },
     { l:'Atingimento',    v: 'N/D',               color:'color:#999' },
     { l:'Meses selecionados', v: sorted.length+' mês(es)', color:'' },
@@ -616,40 +651,16 @@ function initCharts() {
     {label:'2024',data:[],borderColor:'#c0c0bc',backgroundColor:'transparent',tension:0.3,pointRadius:3,borderDash:[4,3]}
   ]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:gd,ticks:xT},y:{grid:gd,ticks:{font:{size:10},color:'#aaa'}}}}});
 
-  charts.ticket = new Chart(document.getElementById('cTicket'), { type:'line', data:{labels:[],datasets:[
-    {label:'Ticket médio',data:[],borderColor:'#1a1a18',tension:0.3,pointRadius:3,yAxisID:'y'},
-    {label:'PA',data:[],borderColor:'#999',borderDash:[5,3],tension:0.3,pointRadius:3,yAxisID:'y2'}
-  ]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:gd,ticks:xT},y:{position:'left',grid:gd,ticks:{font:{size:10},color:'#aaa',callback:v=>'R$'+v}},y2:{position:'right',grid:{drawOnChartArea:false},ticks:{font:{size:10},color:'#aaa'}}}}});
 
-  charts.margem = new Chart(document.getElementById('cMargem'), { type:'line', data:{labels:[],datasets:[
-    {label:'Margem %',data:[],borderColor:'#1a1a18',tension:0.3,pointRadius:3,yAxisID:'y'},
-    {label:'Mark-up',data:[],borderColor:'#999',borderDash:[5,3],tension:0.3,pointRadius:3,yAxisID:'y2'}
-  ]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:gd,ticks:xT},y:{position:'left',grid:gd,ticks:{font:{size:10},color:'#aaa',callback:v=>v+'%'}},y2:{position:'right',grid:{drawOnChartArea:false},ticks:{font:{size:10},color:'#aaa',callback:v=>v+'x'}}}}});
 }
 function refreshCharts() {
   const labels = filteredLabels();
   if(!labels.length) return;
   const d = filteredChartData();
 
-  charts.venda.data.labels = labels;
-  charts.venda.data.datasets[0].data = d.venda;
-  charts.venda.data.datasets[1].data = []; // no AA data yet
-  charts.venda.update();
+  if(charts.venda)  { charts.venda.data.labels  = labels; charts.venda.data.datasets[0].data  = d.venda;  charts.venda.data.datasets[1].data  = []; charts.venda.update(); }
+  if(charts.pecas)  { charts.pecas.data.labels  = labels; charts.pecas.data.datasets[0].data  = d.pecas;  charts.pecas.data.datasets[1].data  = []; charts.pecas.update(); }
 
-  charts.pecas.data.labels = labels;
-  charts.pecas.data.datasets[0].data = d.pecas;
-  charts.pecas.data.datasets[1].data = [];
-  charts.pecas.update();
-
-  charts.ticket.data.labels = labels;
-  charts.ticket.data.datasets[0].data = d.ticket;
-  charts.ticket.data.datasets[1].data = d.pa;
-  charts.ticket.update();
-
-  charts.margem.data.labels = labels;
-  charts.margem.data.datasets[0].data = []; // margem not available
-  charts.margem.data.datasets[1].data = []; // markup not available
-  charts.margem.update();
 }
 
 
@@ -671,6 +682,11 @@ function buildGenderChips() {
     </span>`).join('');
 }
 
+function clearGender() {
+  selectedGenders = [];
+  updateGenderUI();
+}
+
 function toggleGender(g) {
   const idx = selectedGenders.indexOf(g);
   if(idx >= 0) selectedGenders.splice(idx,1); else selectedGenders.push(g);
@@ -682,6 +698,8 @@ function updateGenderUI() {
     const chip = document.getElementById('chip-'+g);
     if(chip) chip.classList.toggle('sel', selectedGenders.includes(g));
   });
+  const btnClear = document.getElementById('btn-clear-gender');
+  if(btnClear) btnClear.style.display = selectedGenders.length > 0 ? 'inline-block' : 'none';
   renderGeneroChart();
   renderGroupList();
 }
@@ -693,82 +711,70 @@ function renderGeneroChart() {
   genders.forEach(g => totals[g] = 0);
   prodRows.forEach(r => { if(totals[r.genero] !== undefined) totals[r.genero] += r.venda; });
 
-  const values = genders.map(g => Math.round(totals[g]));
+  const values   = genders.map(g => Math.round(totals[g]));
   const totalAll = values.reduce((a,b)=>a+b,0);
-
   const bgColors = genders.map(g =>
     selectedGenders.length === 0 || selectedGenders.includes(g)
       ? GENDER_COLORS[g] : '#e8e8e4');
 
+  // Always destroy any orphaned canvas chart (e.g. after re-import)
+  const _existing = Chart.getChart('cGenero');
+  if(_existing && _existing !== chartGenero) { _existing.destroy(); }
+  if(chartGenero && !chartGenero.ctx) { chartGenero = null; } // destroyed externally
+
   if(!chartGenero) {
+    // Create chart only once
     chartGenero = new Chart(document.getElementById('cGenero'), {
       type: 'doughnut',
-      data: { labels: genders, datasets:[{ data: values, backgroundColor: bgColors, borderColor:'#fff', borderWidth:3, hoverOffset:6 }] },
+      data: {
+        labels: genders,
+        datasets: [{ data: values, backgroundColor: bgColors, borderColor:'#fff', borderWidth: 3, hoverOffset: 0 }]
+      },
       options: {
-        responsive:true, maintainAspectRatio:false, cutout:'65%',
-        layout:{ padding:28 },
-        plugins:{
-          legend:{ display:false },
-          tooltip:{ callbacks:{ label: ctx => {
-            const total = ctx.dataset.data.reduce((a,b)=>a+b,0);
-            const p = total ? (ctx.parsed/total*100).toFixed(1) : 0;
-            return ` ${ctx.label}: ${fmtBRL(ctx.parsed)} (${p}%)`;
-          }}}
-        },
+        responsive: true, maintainAspectRatio: false, cutout: '65%',
+        layout: { padding: 4 },
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
         onClick: (e, els) => { if(!els.length) return; toggleGender(chartGenero.data.labels[els[0].index]); },
-        animation:{ onComplete: () => drawDonutLabels(totalAll) },
-        transitions:{ active:{ animation:{ duration:0 }}}
+        animation: { duration: 600 },
+        transitions: { active: { animation: { duration: 0 } } }
       }
     });
   } else {
-    chartGenero.data.datasets[0].data = values;
+    // Update existing chart instantly, then redraw labels
+    chartGenero.data.datasets[0].data            = values;
     chartGenero.data.datasets[0].backgroundColor = bgColors;
-    chartGenero.options.animation = { onComplete: () => drawDonutLabels(totalAll) };
+    chartGenero.options.animation = { duration: 0 };
     chartGenero.update();
   }
 
-  const active = selectedGenders.length > 0 ? selectedGenders : genders;
-  const selTotal = active.reduce((s,g)=>s+Math.round(totals[g]),0);
-  const selPct = totalAll ? (selTotal/totalAll*100).toFixed(0) : 0;
-  document.getElementById('donut-pct').textContent = selPct+'%';
-  document.getElementById('donut-lbl').textContent = selectedGenders.length===0 ? 'Total' :
-    (selectedGenders.length===1 ? selectedGenders[0] : selectedGenders.length+' gêneros');
+  // Update donut center text
+  const active   = selectedGenders.length > 0 ? selectedGenders : genders;
+  const selTotal = active.reduce((s,g) => s + Math.round(totals[g]), 0);
+  const selPct   = totalAll ? (selTotal/totalAll*100).toFixed(0) : 0;
+  document.getElementById('donut-pct').textContent = selPct + '%';
+  document.getElementById('donut-lbl').textContent =
+    selectedGenders.length === 0 ? 'Total' :
+    selectedGenders.length === 1 ? selectedGenders[0] :
+    selectedGenders.length + ' gêneros';
+
+  // Update legend
+  const legendEl = document.getElementById('gender-legend');
+  if(legendEl) {
+    legendEl.innerHTML = genders.map(g => {
+      const val      = Math.round(totals[g]);
+      const pct      = totalAll ? (val/totalAll*100).toFixed(1) : '0.0';
+      const isActive = selectedGenders.length===0 || selectedGenders.includes(g);
+      const opacity  = isActive ? '1' : '0.35';
+      return `<div onclick="toggleGender('${g}')" style="display:flex;align-items:center;gap:6px;cursor:pointer;opacity:${opacity};transition:opacity 0.2s">
+        <span style="width:10px;height:10px;border-radius:50%;background:${GENDER_COLORS[g]};flex-shrink:0;display:inline-block"></span>
+        <span style="font-size:11px;font-weight:600;color:var(--text)">${g}</span>
+        <span style="font-size:11px;color:var(--text-muted)">${pct}%</span>
+        <span style="font-size:11px;color:var(--text-hint)">${fmtAdapt(val)}</span>
+      </div>`;
+    }).join('');
+  }
 }
 
-function drawDonutLabels(total) {
-  if(!chartGenero) return;
-  const chart = chartGenero;
-  const ctx   = chart.ctx;
-  const meta  = chart.getDatasetMeta(0);
-  const genders = chart.data.labels;
-  const values  = chart.data.datasets[0].data;
-  const cx = chart.chartArea.left + (chart.chartArea.right  - chart.chartArea.left)/2;
-  const cy = chart.chartArea.top  + (chart.chartArea.bottom - chart.chartArea.top)/2;
-  ctx.save();
-  meta.data.forEach((arc, i) => {
-    const val = values[i];
-    if(!val) return;
-    const pct = total ? (val/total*100).toFixed(1) : '0.0';
-    const isActive = selectedGenders.length===0 || selectedGenders.includes(genders[i]);
-    if(!isActive) return;
-    const angle  = (arc.startAngle + arc.endAngle) / 2;
-    const labelR = arc.outerRadius + 18;
-    const lx = cx + Math.cos(angle) * labelR;
-    const ly = cy + Math.sin(angle) * labelR;
-    const ix = cx + Math.cos(angle) * (arc.outerRadius + 4);
-    const iy = cy + Math.sin(angle) * (arc.outerRadius + 4);
-    const ox = cx + Math.cos(angle) * (arc.outerRadius + 12);
-    const oy = cy + Math.sin(angle) * (arc.outerRadius + 12);
-    ctx.beginPath(); ctx.moveTo(ix,iy); ctx.lineTo(ox,oy);
-    ctx.strokeStyle='#aaa'; ctx.lineWidth=1; ctx.stroke();
-    ctx.textAlign='center'; ctx.textBaseline='middle';
-    ctx.font='bold 11px sans-serif'; ctx.fillStyle='#1a1a18';
-    ctx.fillText(pct+'%', lx, ly-7);
-    ctx.font='10px sans-serif'; ctx.fillStyle='#6b6b67';
-    ctx.fillText(genders[i], lx, ly+6);
-  });
-  ctx.restore();
-}
 
 function renderGroupList() {
   const el = document.getElementById('group-list');
@@ -798,7 +804,7 @@ function renderGroupList() {
     return `<div class="group-row">
       <div class="group-name">${i+1}. ${r.name}</div>
       <div class="group-bar-wrap"><div class="group-bar-fill" style="width:${barW}%;background:${shade}"></div></div>
-      <div class="group-val">${fmtBRL(r.val)}</div>
+      <div class="group-val">${fmtAdapt(r.val)}</div>
       <div class="group-pct">${p}%</div>
     </div>`;
   }).join('');
@@ -806,247 +812,268 @@ function renderGroupList() {
 
 
 
-// ══════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════════
 //  MINI XLSX PARSER — pure vanilla JS, no dependencies
-//  Supports: DEFLATE compressed + stored entries
-// ══════════════════════════════════════════════════════════
+//  Uses indexOf scanning (O(n)) instead of regex — handles large files
+// ══════════════════════════════════════════════════════════════
 
 async function parseXLSX(arrayBuffer) {
   const bytes = new Uint8Array(arrayBuffer);
 
-  // ── 1. Parse ZIP: find all local file entries ──
-  async function getZipEntries(bytes) {
-    const entries = {};
+  // ── 1. Parse ZIP central directory (reliable, no false-positive signatures) ──
+  function getZipEntries(bytes) {
     const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
-    let i = 0;
-    while (i < bytes.length - 4) {
-      // Local file header signature: PK\x03\x04
-      if (dv.getUint32(i, true) !== 0x04034b50) { i++; continue; }
-      const compression = dv.getUint16(i + 8, true);
-      const compSize    = dv.getUint32(i + 18, true);
-      const fnLen       = dv.getUint16(i + 26, true);
-      const extraLen    = dv.getUint16(i + 28, true);
-      const nameBytes   = bytes.subarray(i + 30, i + 30 + fnLen);
-      const name        = new TextDecoder().decode(nameBytes);
-      const dataStart   = i + 30 + fnLen + extraLen;
-      const compData    = bytes.subarray(dataStart, dataStart + compSize);
-      entries[name]     = { compression, data: compData };
-      i = dataStart + compSize;
+    // Find End of Central Directory (search from end)
+    let eocd = -1;
+    for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 65558); i--) {
+      if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+    }
+    if (eocd < 0) throw new Error('EOCD não encontrado — arquivo corrompido?');
+    const cdOffset = dv.getUint32(eocd + 16, true);
+    const cdSize   = dv.getUint32(eocd + 12, true);
+    const entries  = {};
+    let j = cdOffset;
+    while (j < cdOffset + cdSize) {
+      if (dv.getUint32(j, true) !== 0x02014b50) break;
+      const compression = dv.getUint16(j + 10, true);
+      const compSize    = dv.getUint32(j + 20, true);
+      const fnLen       = dv.getUint16(j + 28, true);
+      const extraLen    = dv.getUint16(j + 30, true);
+      const commentLen  = dv.getUint16(j + 32, true);
+      const lhOffset    = dv.getUint32(j + 42, true);
+      const name        = new TextDecoder().decode(bytes.subarray(j + 46, j + 46 + fnLen));
+      // Get actual data from local header
+      const lhExtraLen  = dv.getUint16(lhOffset + 28, true);
+      const lhFnLen     = dv.getUint16(lhOffset + 26, true);
+      const dataOffset  = lhOffset + 30 + lhFnLen + lhExtraLen;
+      entries[name]     = { compression, data: bytes.subarray(dataOffset, dataOffset + compSize) };
+      j += 46 + fnLen + extraLen + commentLen;
     }
     return entries;
   }
 
-  // ── 2. Decompress DEFLATE (compression=8) or return raw (compression=0) ──
+  // ── 2. Decompress DEFLATE or return stored ──
   async function decompress(entry) {
-    if (entry.compression === 0) {
-      return new TextDecoder('utf-8').decode(entry.data);
-    }
-    // DEFLATE: use DecompressionStream (Chrome 80+, Firefox 113+, Safari 16.4+)
-    const ds     = new DecompressionStream('deflate-raw');
-    const writer = ds.writable.getWriter();
-    const reader = ds.readable.getReader();
-    writer.write(entry.data);
-    writer.close();
+    if (entry.compression === 0) return new TextDecoder('utf-8').decode(entry.data);
+    const ds = new DecompressionStream('deflate-raw');
+    const w  = ds.writable.getWriter();
+    const r  = ds.readable.getReader();
+    w.write(entry.data); w.close();
     const chunks = [];
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      chunks.push(value);
-    }
+    while (true) { const { done, value } = await r.read(); if (done) break; chunks.push(value); }
     const total = chunks.reduce((s, c) => s + c.length, 0);
-    const out   = new Uint8Array(total);
-    let off = 0;
+    const out   = new Uint8Array(total); let off = 0;
     for (const c of chunks) { out.set(c, off); off += c.length; }
     return new TextDecoder('utf-8').decode(out);
   }
 
-  // ── 3. Parse sharedStrings.xml ──
+  // ── 3. Fast sharedStrings parser using indexOf ──
   function parseSharedStrings(xml) {
     const strs = [];
-    // Match <si><t ...>TEXT</t></si> and <si><r>...<t>TEXT</t>...</r></si>
-    const siRe = /<si>([\s\S]*?)<\/si>/g;
-    const tRe  = /<t(?:[^>]*)>([\s\S]*?)<\/t>/g;
-    let m;
-    while ((m = siRe.exec(xml)) !== null) {
-      const si = m[1];
-      let text = '';
-      let tm;
-      tRe.lastIndex = 0;
-      while ((tm = tRe.exec(si)) !== null) text += tm[1];
-      strs.push(text.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#xD;/g,''));
+    let pos = 0;
+    while (true) {
+      const siStart = xml.indexOf('<si>', pos);
+      if (siStart < 0) break;
+      const siEnd = xml.indexOf('</si>', siStart);
+      if (siEnd < 0) break;
+      const si = xml.substring(siStart + 4, siEnd);
+      // Collect all <t>...</t> values (handles rich text)
+      let text = ''; let tp = 0;
+      while (true) {
+        const ts = si.indexOf('<t', tp);
+        if (ts < 0) break;
+        const tc = si.indexOf('>', ts);
+        const te = si.indexOf('</t>', tc);
+        if (tc < 0 || te < 0) break;
+        text += si.substring(tc + 1, te);
+        tp = te + 4;
+      }
+      strs.push(text.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"'));
+      pos = siEnd + 5;
     }
     return strs;
   }
 
-  // ── 4. Parse a worksheet XML → array of row objects ──
-  function parseSheet(xml, ss, colMap) {
-    // colMap: { A: 'loja', B: 'franqueado', ... } — built from header row
-    const rows = [];
-    const rowRe = /<row [^>]*r="(\d+)"[^>]*>([\s\S]*?)<\/row>/g;
-    const cellRe = /<c r="([A-Z]+)\d+" ?(?:t="([^"]*)")?[^>]*>(?:<v>([\s\S]*?)<\/v>)?/g;
-    let headerMap = null;
-    let m;
-    while ((m = rowRe.exec(xml)) !== null) {
-      const rowNum = parseInt(m[1], 10);
-      const rowXml = m[2];
-      const cells  = {};
-      let cm;
-      cellRe.lastIndex = 0;
-      while ((cm = cellRe.exec(rowXml)) !== null) {
-        const col = cm[1];
-        const typ = cm[2] || '';
-        const raw = cm[3] !== undefined ? cm[3] : '';
-        cells[col] = typ === 's' ? (ss[parseInt(raw,10)] || '') :
-                     typ === 'str' || typ === 'inlineStr' ? raw : raw;
+  // ── 4. Fast worksheet parser using indexOf ──
+  // Returns array of row objects keyed by column letter
+  function parseSheet(xml, ss) {
+    const rows  = [];
+    let headers = null;  // col letter → header name
+    let pos = 0;
+    while (true) {
+      // Find next <row
+      const rowStart = xml.indexOf('<row ', pos);
+      if (rowStart < 0) break;
+      // Get row number
+      const rAttr = xml.indexOf('r="', rowStart);
+      const rEnd  = xml.indexOf('"', rAttr + 3);
+      const rowNum = parseInt(xml.substring(rAttr + 3, rEnd), 10);
+      // Find end of row
+      const rowEnd = xml.indexOf('</row>', rowStart);
+      if (rowEnd < 0) break;
+      const rowXml = xml.substring(rowStart, rowEnd + 6);
+      pos = rowEnd + 6;
+
+      // Parse cells
+      const cells = {};
+      let cp = 0;
+      while (true) {
+        const cs = rowXml.indexOf('<c ', cp);
+        if (cs < 0) break;
+        const ce = rowXml.indexOf('</c>', cs);
+        const cn = rowXml.indexOf('<c ', cs + 1);
+        const cellEnd = (ce >= 0 && (cn < 0 || ce < cn)) ? ce + 4 :
+                        (cn >= 0 ? cn : rowXml.length);
+        const cellXml = rowXml.substring(cs, cellEnd);
+
+        // Get column ref (letters only)
+        const rPos  = cellXml.indexOf('r="') + 3;
+        let colEnd  = rPos;
+        while (colEnd < cellXml.length && cellXml[colEnd] >= 'A' && cellXml[colEnd] <= 'Z') colEnd++;
+        const col   = cellXml.substring(rPos, colEnd);
+
+        // Get type
+        const tPos  = cellXml.indexOf(' t="');
+        const typ   = tPos >= 0 ? cellXml.substring(tPos + 4, cellXml.indexOf('"', tPos + 4)) : '';
+
+        // Get value from <v>
+        const vs    = cellXml.indexOf('<v>');
+        const ve    = cellXml.indexOf('</v>');
+        const raw   = (vs >= 0 && ve > vs) ? cellXml.substring(vs + 3, ve) : '';
+
+        cells[col] = (typ === 's') ? (ss[parseInt(raw, 10)] || '') : raw;
+        cp = cs + 3;
       }
+
       if (rowNum === 1) {
-        // Build header map from first row
-        headerMap = {};
-        Object.entries(cells).forEach(([col, val]) => {
-          if (val) headerMap[col] = String(val).trim();
-        });
+        // Build header map
+        headers = {};
+        for (const [col, val] of Object.entries(cells)) { if (val) headers[col] = String(val).trim(); }
         continue;
       }
-      if (!headerMap) continue;
+      if (!headers) continue;
+
       const obj = {};
-      Object.entries(headerMap).forEach(([col, hdr]) => {
+      for (const [col, hdr] of Object.entries(headers)) {
         obj[hdr] = cells[col] !== undefined ? cells[col] : '';
-      });
+      }
       rows.push(obj);
     }
     return rows;
   }
 
-  // ── 5. Aggregate SO rows ──
+  // ── 5. Aggregate SO ──
   function aggregateSO(rows, mesMap) {
-    const agg = {};
     const MESES = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO',
                    'JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
-    rows.forEach(r => {
-      const loja  = (r['loja'] || '').trim().toUpperCase();
-      const mes   = parseInt(r['mes2'] || r['mês'] || r['mes'] || 0, 10);
-      const fra   = (r['franqueado']  || '').trim().toUpperCase();
-      const sup   = (r['supervisao']  || '').trim().toUpperCase();
-      const reg   = (r['regional']    || '').trim().toUpperCase();
-      if (!loja || !mes) return;
+    const agg = {};
+    for (const r of rows) {
+      const loja = (r['loja'] || '').trim().toUpperCase();
+      const mes  = parseInt(r['mes2'] || r['mês'] || r['mes'] || 0, 10);
+      if (!loja || !mes) continue;
       const key = mes + '|' + loja;
       if (!agg[key]) agg[key] = {
-        mes, loja, franqueado: fra, supervisao: sup, regional: reg,
-        desc_mes: mesMap[mes] || MESES[mes-1] || String(mes),
+        mes, loja,
+        franqueado: (r['franqueado'] || '').trim().toUpperCase(),
+        supervisao: (r['supervisao'] || '').trim().toUpperCase(),
+        regional:   (r['regional']   || '').trim().toUpperCase(),
+        desc_mes: mesMap[mes] || MESES[mes - 1] || String(mes),
         venda: 0, pecas: 0, ticket_atend: 0
       };
-      agg[key].venda        += parseFloat(r['venda']  || 0);
-      agg[key].pecas        += parseInt(r['pecas']    || 0, 10);
-      agg[key].ticket_atend += parseInt(r['ticket']   || 0, 10);
-    });
+      agg[key].venda        += parseFloat(r['venda']  || 0) || 0;
+      agg[key].pecas        += parseInt(r['pecas']    || 0, 10) || 0;
+      agg[key].ticket_atend += parseInt(r['ticket']   || 0, 10) || 0;
+    }
     return Object.values(agg);
   }
 
-  // ── 6. Aggregate PROD rows ──
+  // ── 6. Aggregate PROD ──
   function aggregatePROD(rows, lojaMap, mesMap) {
-    const agg = {};
     const MESES = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO',
                    'JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
-    rows.forEach(r => {
-      const entidade = (r['Entidade'] || r['entidade'] || '').replace(/FRANQUIA /i,'').trim().toUpperCase();
-      const mes      = parseInt(r['Mes'] || r['mes'] || 0, 10);
-      const genero   = (r['Genero']  || r['genero']  || '').trim().toUpperCase();
-      const grupo    = (r['Grupo']   || r['grupo']   || '').trim().toUpperCase();
-      if (!entidade || !mes || !genero || !grupo) return;
-      const map = lojaMap[entidade] || {};
-      const key = `${mes}|${entidade}|${genero}|${grupo}`;
+    const agg = {};
+    for (const r of rows) {
+      const ent    = (r['Entidade'] || r['entidade'] || '').replace(/FRANQUIA /i, '').trim().toUpperCase();
+      const mes    = parseInt(r['Mes'] || r['mes'] || 0, 10);
+      const genero = (r['Genero']  || r['genero']  || '').trim().toUpperCase();
+      const grupo  = (r['Grupo']   || r['grupo']   || '').trim().toUpperCase();
+      if (!ent || !mes || !genero || !grupo) continue;
+      const map = lojaMap[ent] || {};
+      const key = `${mes}|${ent}|${genero}|${grupo}`;
       if (!agg[key]) agg[key] = {
-        mes, loja: entidade,
+        mes, loja: ent,
         franqueado: map.franqueado || '', supervisao: map.supervisao || '', regional: map.regional || '',
-        desc_mes: mesMap[mes] || MESES[mes-1] || String(mes),
+        desc_mes: mesMap[mes] || MESES[mes - 1] || String(mes),
         genero, grupo, venda: 0, qtde: 0
       };
-      agg[key].venda += parseFloat(r['Venda 2026'] || r['venda'] || 0);
-      agg[key].qtde  += parseInt(r['qtde_venda']   || r['qtde']  || 0, 10);
-    });
+      agg[key].venda += parseFloat(r['Venda 2026'] || r['venda'] || 0) || 0;
+      agg[key].qtde  += parseInt(r['qtde_venda']   || r['qtde']  || 0, 10) || 0;
+    }
     return Object.values(agg);
   }
 
-  // ── MAIN FLOW ──
-  const entries = await getZipEntries(bytes);
-  const entryNames = Object.keys(entries);
-  console.log('ZIP entries:', entryNames);
+  // ── MAIN ──
+  const entries = getZipEntries(bytes);
 
-  // Load sharedStrings
-  const ssEntry = entries['xl/sharedStrings.xml'];
-  if (!ssEntry) throw new Error('sharedStrings.xml não encontrado');
-  const ssXml = await decompress(ssEntry);
-  const ss = parseSharedStrings(ssXml);
-  console.log('SharedStrings loaded:', ss.length);
+  const ssXml = await decompress(entries['xl/sharedStrings.xml']);
+  const ss    = parseSharedStrings(ssXml);
 
-  // Identify sheet files from workbook.xml
-  const wbXml  = await decompress(entries['xl/workbook.xml']);
-  const relsXml= await decompress(entries['xl/_rels/workbook.xml.rels']);
+  // Parse workbook + rels
+  const wbXml   = await decompress(entries['xl/workbook.xml']);
+  const relsXml = await decompress(entries['xl/_rels/workbook.xml.rels']);
 
-  // Map rId → file
   const relMap = {};
-  const relRe  = /Id="([^"]+)"[^>]+Target="([^"]+)"/g;
-  let rm;
+  let rm, relRe = /Id="([^"]+)"[^>]+Target="([^"]+)"/g;
   while ((rm = relRe.exec(relsXml)) !== null) relMap[rm[1]] = rm[2];
 
-  // Map sheet name → rId
-  const sheetRe = /name="([^"]+)"[^>]+r:id="([^"]+)"/g;
-  let sm;
   const sheetFiles = {};
+  let sm, sheetRe = /name="([^"]+)"[^>]+r:id="([^"]+)"/g;
   while ((sm = sheetRe.exec(wbXml)) !== null) {
-    const file = relMap[sm[2]];
-    if (file) sheetFiles[sm[1]] = 'xl/' + file.replace(/^(\.\.\/)?/, '');
+    const f = relMap[sm[2]];
+    if (f) sheetFiles[sm[1]] = 'xl/' + f.replace(/^(\.\.\/)?/, '');
   }
-  console.log('Sheet files:', sheetFiles);
 
-  // ── Parse validacao_dados for mesMap ──
+  // mesMap from validacao_dados
   const mesMap = {};
   const valFile = sheetFiles['validacao_dados'];
   if (valFile && entries[valFile]) {
-    const valXml  = await decompress(entries[valFile]);
-    const valRows = parseSheet(valXml, ss);
-    valRows.forEach(r => {
-      const num  = parseInt(r['mês'] || r['mes'] || r['Mês'] || 0, 10);
-      const nome = r['desc_mes'] || r['DESC_MES'];
-      if (num && nome) mesMap[num] = String(nome).toUpperCase();
-    });
-    console.log('mesMap:', mesMap);
+    const valRows = parseSheet(await decompress(entries[valFile]), ss);
+    for (const r of valRows) {
+      const n = parseInt(r['mês'] || r['mes'] || r['Mês'] || 0, 10);
+      const m = r['desc_mes'] || r['DESC_MES'];
+      if (n && m) mesMap[n] = String(m).toUpperCase();
+    }
+  }
+  if (!Object.keys(mesMap).length) {
+    ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO']
+      .forEach((m, i) => mesMap[i + 1] = m);
   }
 
-  // ── Parse Sell_Out ──
+  // Parse Sell_Out
   const soFile = sheetFiles['Sell_Out'];
   if (!soFile || !entries[soFile]) throw new Error('Aba Sell_Out não encontrada');
-  console.log('Parsing Sell_Out...');
-  const soXml  = await decompress(entries[soFile]);
-  const soRows = parseSheet(soXml, ss);
-  console.log('SO rows:', soRows.length, 'sample:', soRows[0]);
+  const soRows = parseSheet(await decompress(entries[soFile]), ss);
 
-  // Build lojaMap from SO rows
   const lojaMap = {};
-  soRows.forEach(r => {
+  for (const r of soRows) {
     const loja = (r['loja'] || '').trim().toUpperCase();
-    if (loja && r['franqueado'] && !lojaMap[loja]) {
+    if (loja && r['franqueado'] && !lojaMap[loja])
       lojaMap[loja] = {
         franqueado: (r['franqueado'] || '').trim().toUpperCase(),
         supervisao: (r['supervisao'] || '').trim().toUpperCase(),
         regional:   (r['regional']   || '').trim().toUpperCase(),
       };
-    }
-  });
+  }
 
   const newSO = aggregateSO(soRows, mesMap);
-  console.log('SO aggregated:', newSO.length);
 
-  // ── Parse Sell Out Prod ──
+  // Parse Sell Out Prod
   let newPROD = [];
   const prodFile = sheetFiles['Sell Out Prod'];
   if (prodFile && entries[prodFile]) {
-    console.log('Parsing Sell Out Prod...');
-    const prodXml  = await decompress(entries[prodFile]);
-    const prodRows = parseSheet(prodXml, ss);
-    console.log('PROD rows:', prodRows.length);
+    const prodRows = parseSheet(await decompress(entries[prodFile]), ss);
     newPROD = aggregatePROD(prodRows, lojaMap, mesMap);
-    console.log('PROD aggregated:', newPROD.length);
   }
 
   return { so: newSO, prod: newPROD };
@@ -1120,22 +1147,37 @@ async function confirmUpload() {
 
     pf.style.width = '100%';
     setTimeout(() => {
-      closeModal();
-      const now = new Date();
-      document.getElementById('upload-meta').textContent =
-        'Atualizado em ' + now.toLocaleDateString('pt-BR') + ' ' +
-        now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-      document.getElementById('btn-upload').innerHTML =
-        '<i class="ti ti-check" style="font-size:15px"></i> Planilha atualizada';
-      setTimeout(()=>{
+      try {
+        closeModal();
+        const now = new Date();
+        document.getElementById('upload-meta').textContent =
+          'Atualizado em ' + now.toLocaleDateString('pt-BR') + ' ' +
+          now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
         document.getElementById('btn-upload').innerHTML =
-          '<i class="ti ti-file-spreadsheet" style="font-size:15px"></i> Atualizar planilha';
-      }, 3000);
-      buildFilters(); renderPills(); renderMetrics(); renderDailyTable();
-      refreshCharts(); chartGenero = null; renderGeneroChart(); renderGroupList();
-      showToast('Importado: ' + newSO.length + ' reg. SO · ' + newPROD.length + ' Prod', 'success');
-      btn.disabled = false;
-      btn.innerHTML = '<i class="ti ti-upload" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>Importar';
+          '<i class="ti ti-check" style="font-size:15px"></i> Planilha atualizada';
+        setTimeout(()=>{
+          document.getElementById('btn-upload').innerHTML =
+            '<i class="ti ti-file-spreadsheet" style="font-size:15px"></i> Atualizar planilha';
+        }, 3000);
+
+        buildFilters();
+        renderPills();
+        renderMetrics();
+        renderDailyTable();
+        refreshCharts();
+        if(chartGenero) { chartGenero.destroy(); chartGenero = null; }
+        renderGeneroChart();
+        renderGroupList();
+
+        showToast('Planilha importada com sucesso!', 'success');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-upload" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>Importar';
+      } catch(renderErr) {
+        console.error('Render error after import:', renderErr, renderErr.stack);
+        showToast('Dados importados mas erro ao renderizar: ' + renderErr.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ti ti-upload" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>Importar';
+      }
     }, 300);
 
   } catch(err) {
