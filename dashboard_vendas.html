@@ -301,7 +301,7 @@
 <div class="modal-bg" id="modal-bg" onclick="handleBgClick(event)">
   <div class="modal">
     <h3><i class="ti ti-file-spreadsheet" style="font-size:17px;vertical-align:-3px;margin-right:7px"></i>Atualizar planilha</h3>
-    <p>Importe um arquivo <strong>.xlsx</strong> ou <strong>.csv</strong> com os dados de vendas. O dashboard será atualizado automaticamente.</p>
+    <p>Selecione o arquivo <strong>sellout.xlsx</strong> para atualizar o dashboard.</p>
     <div class="drop-zone" id="drop-zone"
       onclick="document.getElementById('file-input').click()"
       ondragover="handleDragOver(event)"
@@ -309,9 +309,9 @@
       ondrop="handleDrop(event)">
       <i class="ti ti-cloud-upload"></i>
       <div class="dz-text"><strong>Clique para selecionar</strong> ou arraste o arquivo aqui</div>
-      <div class="dz-hint">xlsx, xls ou csv · máx. 10 MB</div>
+      <div class="dz-hint">sellout.xlsx · máx. 20 MB</div>
     </div>
-    <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleFileSelect(this.files)">
+    <input type="file" id="file-input" accept=".xlsx,.xls" style="display:none" onchange="handleFileSelect(this.files)">
     <div id="file-preview" style="display:none" class="file-preview">
       <i class="ti ti-file-spreadsheet"></i>
       <span class="file-name" id="file-name"></span>
@@ -319,12 +319,7 @@
       <button class="file-remove" onclick="removeFile()" aria-label="Remover"><i class="ti ti-x" style="font-size:13px"></i></button>
     </div>
     <div class="progress-bar" id="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
-    <div class="col-hint">
-      Colunas esperadas na planilha:<br>
-      <code>data</code> <code>loja</code> <code>grupo</code> <code>regiao</code> <code>supervisao</code>
-      <code>venda</code> <code>meta</code> <code>pecas</code> <code>ticket</code>
-      <code>pa</code> <code>margem</code> <code>custo</code>
-    </div>
+    <div class="col-hint">Abas esperadas: <code>Sell_Out</code> · <code>Sell Out Prod</code> · <code>validacao_dados</code></div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
       <button class="btn-confirm" id="btn-confirm" onclick="confirmUpload()" disabled>
@@ -807,6 +802,365 @@ function renderGroupList() {
       <div class="group-pct">${p}%</div>
     </div>`;
   }).join('');
+}
+
+
+
+// ══════════════════════════════════════════════════════════
+//  MINI XLSX PARSER — pure vanilla JS, no dependencies
+//  Supports: DEFLATE compressed + stored entries
+// ══════════════════════════════════════════════════════════
+
+async function parseXLSX(arrayBuffer) {
+  const bytes = new Uint8Array(arrayBuffer);
+
+  // ── 1. Parse ZIP: find all local file entries ──
+  async function getZipEntries(bytes) {
+    const entries = {};
+    const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    let i = 0;
+    while (i < bytes.length - 4) {
+      // Local file header signature: PK\x03\x04
+      if (dv.getUint32(i, true) !== 0x04034b50) { i++; continue; }
+      const compression = dv.getUint16(i + 8, true);
+      const compSize    = dv.getUint32(i + 18, true);
+      const fnLen       = dv.getUint16(i + 26, true);
+      const extraLen    = dv.getUint16(i + 28, true);
+      const nameBytes   = bytes.subarray(i + 30, i + 30 + fnLen);
+      const name        = new TextDecoder().decode(nameBytes);
+      const dataStart   = i + 30 + fnLen + extraLen;
+      const compData    = bytes.subarray(dataStart, dataStart + compSize);
+      entries[name]     = { compression, data: compData };
+      i = dataStart + compSize;
+    }
+    return entries;
+  }
+
+  // ── 2. Decompress DEFLATE (compression=8) or return raw (compression=0) ──
+  async function decompress(entry) {
+    if (entry.compression === 0) {
+      return new TextDecoder('utf-8').decode(entry.data);
+    }
+    // DEFLATE: use DecompressionStream (Chrome 80+, Firefox 113+, Safari 16.4+)
+    const ds     = new DecompressionStream('deflate-raw');
+    const writer = ds.writable.getWriter();
+    const reader = ds.readable.getReader();
+    writer.write(entry.data);
+    writer.close();
+    const chunks = [];
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+    }
+    const total = chunks.reduce((s, c) => s + c.length, 0);
+    const out   = new Uint8Array(total);
+    let off = 0;
+    for (const c of chunks) { out.set(c, off); off += c.length; }
+    return new TextDecoder('utf-8').decode(out);
+  }
+
+  // ── 3. Parse sharedStrings.xml ──
+  function parseSharedStrings(xml) {
+    const strs = [];
+    // Match <si><t ...>TEXT</t></si> and <si><r>...<t>TEXT</t>...</r></si>
+    const siRe = /<si>([\s\S]*?)<\/si>/g;
+    const tRe  = /<t(?:[^>]*)>([\s\S]*?)<\/t>/g;
+    let m;
+    while ((m = siRe.exec(xml)) !== null) {
+      const si = m[1];
+      let text = '';
+      let tm;
+      tRe.lastIndex = 0;
+      while ((tm = tRe.exec(si)) !== null) text += tm[1];
+      strs.push(text.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#xD;/g,''));
+    }
+    return strs;
+  }
+
+  // ── 4. Parse a worksheet XML → array of row objects ──
+  function parseSheet(xml, ss, colMap) {
+    // colMap: { A: 'loja', B: 'franqueado', ... } — built from header row
+    const rows = [];
+    const rowRe = /<row [^>]*r="(\d+)"[^>]*>([\s\S]*?)<\/row>/g;
+    const cellRe = /<c r="([A-Z]+)\d+" ?(?:t="([^"]*)")?[^>]*>(?:<v>([\s\S]*?)<\/v>)?/g;
+    let headerMap = null;
+    let m;
+    while ((m = rowRe.exec(xml)) !== null) {
+      const rowNum = parseInt(m[1], 10);
+      const rowXml = m[2];
+      const cells  = {};
+      let cm;
+      cellRe.lastIndex = 0;
+      while ((cm = cellRe.exec(rowXml)) !== null) {
+        const col = cm[1];
+        const typ = cm[2] || '';
+        const raw = cm[3] !== undefined ? cm[3] : '';
+        cells[col] = typ === 's' ? (ss[parseInt(raw,10)] || '') :
+                     typ === 'str' || typ === 'inlineStr' ? raw : raw;
+      }
+      if (rowNum === 1) {
+        // Build header map from first row
+        headerMap = {};
+        Object.entries(cells).forEach(([col, val]) => {
+          if (val) headerMap[col] = String(val).trim();
+        });
+        continue;
+      }
+      if (!headerMap) continue;
+      const obj = {};
+      Object.entries(headerMap).forEach(([col, hdr]) => {
+        obj[hdr] = cells[col] !== undefined ? cells[col] : '';
+      });
+      rows.push(obj);
+    }
+    return rows;
+  }
+
+  // ── 5. Aggregate SO rows ──
+  function aggregateSO(rows, mesMap) {
+    const agg = {};
+    const MESES = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO',
+                   'JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+    rows.forEach(r => {
+      const loja  = (r['loja'] || '').trim().toUpperCase();
+      const mes   = parseInt(r['mes2'] || r['mês'] || r['mes'] || 0, 10);
+      const fra   = (r['franqueado']  || '').trim().toUpperCase();
+      const sup   = (r['supervisao']  || '').trim().toUpperCase();
+      const reg   = (r['regional']    || '').trim().toUpperCase();
+      if (!loja || !mes) return;
+      const key = mes + '|' + loja;
+      if (!agg[key]) agg[key] = {
+        mes, loja, franqueado: fra, supervisao: sup, regional: reg,
+        desc_mes: mesMap[mes] || MESES[mes-1] || String(mes),
+        venda: 0, pecas: 0, ticket_atend: 0
+      };
+      agg[key].venda        += parseFloat(r['venda']  || 0);
+      agg[key].pecas        += parseInt(r['pecas']    || 0, 10);
+      agg[key].ticket_atend += parseInt(r['ticket']   || 0, 10);
+    });
+    return Object.values(agg);
+  }
+
+  // ── 6. Aggregate PROD rows ──
+  function aggregatePROD(rows, lojaMap, mesMap) {
+    const agg = {};
+    const MESES = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO',
+                   'JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+    rows.forEach(r => {
+      const entidade = (r['Entidade'] || r['entidade'] || '').replace(/FRANQUIA /i,'').trim().toUpperCase();
+      const mes      = parseInt(r['Mes'] || r['mes'] || 0, 10);
+      const genero   = (r['Genero']  || r['genero']  || '').trim().toUpperCase();
+      const grupo    = (r['Grupo']   || r['grupo']   || '').trim().toUpperCase();
+      if (!entidade || !mes || !genero || !grupo) return;
+      const map = lojaMap[entidade] || {};
+      const key = `${mes}|${entidade}|${genero}|${grupo}`;
+      if (!agg[key]) agg[key] = {
+        mes, loja: entidade,
+        franqueado: map.franqueado || '', supervisao: map.supervisao || '', regional: map.regional || '',
+        desc_mes: mesMap[mes] || MESES[mes-1] || String(mes),
+        genero, grupo, venda: 0, qtde: 0
+      };
+      agg[key].venda += parseFloat(r['Venda 2026'] || r['venda'] || 0);
+      agg[key].qtde  += parseInt(r['qtde_venda']   || r['qtde']  || 0, 10);
+    });
+    return Object.values(agg);
+  }
+
+  // ── MAIN FLOW ──
+  const entries = await getZipEntries(bytes);
+  const entryNames = Object.keys(entries);
+  console.log('ZIP entries:', entryNames);
+
+  // Load sharedStrings
+  const ssEntry = entries['xl/sharedStrings.xml'];
+  if (!ssEntry) throw new Error('sharedStrings.xml não encontrado');
+  const ssXml = await decompress(ssEntry);
+  const ss = parseSharedStrings(ssXml);
+  console.log('SharedStrings loaded:', ss.length);
+
+  // Identify sheet files from workbook.xml
+  const wbXml  = await decompress(entries['xl/workbook.xml']);
+  const relsXml= await decompress(entries['xl/_rels/workbook.xml.rels']);
+
+  // Map rId → file
+  const relMap = {};
+  const relRe  = /Id="([^"]+)"[^>]+Target="([^"]+)"/g;
+  let rm;
+  while ((rm = relRe.exec(relsXml)) !== null) relMap[rm[1]] = rm[2];
+
+  // Map sheet name → rId
+  const sheetRe = /name="([^"]+)"[^>]+r:id="([^"]+)"/g;
+  let sm;
+  const sheetFiles = {};
+  while ((sm = sheetRe.exec(wbXml)) !== null) {
+    const file = relMap[sm[2]];
+    if (file) sheetFiles[sm[1]] = 'xl/' + file.replace(/^(\.\.\/)?/, '');
+  }
+  console.log('Sheet files:', sheetFiles);
+
+  // ── Parse validacao_dados for mesMap ──
+  const mesMap = {};
+  const valFile = sheetFiles['validacao_dados'];
+  if (valFile && entries[valFile]) {
+    const valXml  = await decompress(entries[valFile]);
+    const valRows = parseSheet(valXml, ss);
+    valRows.forEach(r => {
+      const num  = parseInt(r['mês'] || r['mes'] || r['Mês'] || 0, 10);
+      const nome = r['desc_mes'] || r['DESC_MES'];
+      if (num && nome) mesMap[num] = String(nome).toUpperCase();
+    });
+    console.log('mesMap:', mesMap);
+  }
+
+  // ── Parse Sell_Out ──
+  const soFile = sheetFiles['Sell_Out'];
+  if (!soFile || !entries[soFile]) throw new Error('Aba Sell_Out não encontrada');
+  console.log('Parsing Sell_Out...');
+  const soXml  = await decompress(entries[soFile]);
+  const soRows = parseSheet(soXml, ss);
+  console.log('SO rows:', soRows.length, 'sample:', soRows[0]);
+
+  // Build lojaMap from SO rows
+  const lojaMap = {};
+  soRows.forEach(r => {
+    const loja = (r['loja'] || '').trim().toUpperCase();
+    if (loja && r['franqueado'] && !lojaMap[loja]) {
+      lojaMap[loja] = {
+        franqueado: (r['franqueado'] || '').trim().toUpperCase(),
+        supervisao: (r['supervisao'] || '').trim().toUpperCase(),
+        regional:   (r['regional']   || '').trim().toUpperCase(),
+      };
+    }
+  });
+
+  const newSO = aggregateSO(soRows, mesMap);
+  console.log('SO aggregated:', newSO.length);
+
+  // ── Parse Sell Out Prod ──
+  let newPROD = [];
+  const prodFile = sheetFiles['Sell Out Prod'];
+  if (prodFile && entries[prodFile]) {
+    console.log('Parsing Sell Out Prod...');
+    const prodXml  = await decompress(entries[prodFile]);
+    const prodRows = parseSheet(prodXml, ss);
+    console.log('PROD rows:', prodRows.length);
+    newPROD = aggregatePROD(prodRows, lojaMap, mesMap);
+    console.log('PROD aggregated:', newPROD.length);
+  }
+
+  return { so: newSO, prod: newPROD };
+}
+
+// ── UPLOAD HANDLERS ──
+function openModal()  { document.getElementById('modal-bg').classList.add('open'); }
+function closeModal() { document.getElementById('modal-bg').classList.remove('open'); removeFile(); }
+function handleBgClick(e) { if(e.target===document.getElementById('modal-bg')) closeModal(); }
+function handleDragOver(e)  { e.preventDefault(); document.getElementById('drop-zone').classList.add('drag'); }
+function handleDragLeave()  { document.getElementById('drop-zone').classList.remove('drag'); }
+function handleDrop(e) { e.preventDefault(); document.getElementById('drop-zone').classList.remove('drag'); if(e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]); }
+function handleFileSelect(files) { if(files[0]) setFile(files[0]); }
+
+function setFile(f) {
+  const ext = f.name.split('.').pop().toLowerCase();
+  if(!['xlsx','xls'].includes(ext)) { showToast('Selecione um arquivo .xlsx', 'error'); return; }
+  if(f.size > 30*1024*1024) { showToast('Arquivo muito grande. Máx. 30 MB.', 'error'); return; }
+  selectedFile = f;
+  document.getElementById('drop-zone').style.display = 'none';
+  document.getElementById('file-preview').style.display = 'flex';
+  document.getElementById('file-name').textContent = f.name;
+  document.getElementById('file-size').textContent = f.size > 1024*1024
+    ? (f.size/1024/1024).toFixed(1)+' MB' : (f.size/1024).toFixed(0)+' KB';
+  document.getElementById('btn-confirm').disabled = false;
+}
+
+function removeFile() {
+  selectedFile = null;
+  document.getElementById('drop-zone').style.display = 'block';
+  document.getElementById('file-preview').style.display = 'none';
+  document.getElementById('btn-confirm').disabled = true;
+  document.getElementById('progress-bar').style.display = 'none';
+  document.getElementById('progress-fill').style.width = '0%';
+  document.getElementById('file-input').value = '';
+}
+
+async function confirmUpload() {
+  if(!selectedFile) return;
+  const pb  = document.getElementById('progress-bar');
+  const pf  = document.getElementById('progress-fill');
+  const btn = document.getElementById('btn-confirm');
+  pb.style.display = 'block'; pf.style.width = '10%';
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>Lendo...';
+
+  try {
+    const arrayBuffer = await selectedFile.arrayBuffer();
+    pf.style.width = '25%';
+    btn.innerHTML = '<i class="ti ti-loader" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>Descomprimindo...';
+
+    const { so: newSO, prod: newPROD } = await parseXLSX(arrayBuffer);
+    pf.style.width = '85%';
+
+    if(!newSO.length) throw new Error('Nenhum dado encontrado em Sell_Out.');
+
+    // Swap global data
+    SO_DATA.length   = 0; newSO.forEach(r   => SO_DATA.push(r));
+    PROD_DATA.length = 0; newPROD.forEach(r => PROD_DATA.push(r));
+
+    // Rebuild filter options
+    const uFranq = [...new Set(newSO.map(r=>r.franqueado).filter(Boolean))].sort();
+    const uLoja  = [...new Set(newSO.map(r=>r.loja).filter(Boolean))].sort();
+    const uSup   = [...new Set(newSO.map(r=>r.supervisao).filter(Boolean))].sort();
+    const uReg   = [...new Set(newSO.map(r=>r.regional).filter(Boolean))].sort();
+    FILTERS.find(f=>f.id==='grupo').opts  = uFranq;
+    FILTERS.find(f=>f.id==='loja').opts   = uLoja;
+    FILTERS.find(f=>f.id==='sup').opts    = uSup;
+    FILTERS.find(f=>f.id==='regiao').opts = uReg;
+    FILTERS.forEach(f => state[f.id] = [...f.opts]);
+
+    pf.style.width = '100%';
+    setTimeout(() => {
+      closeModal();
+      const now = new Date();
+      document.getElementById('upload-meta').textContent =
+        'Atualizado em ' + now.toLocaleDateString('pt-BR') + ' ' +
+        now.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+      document.getElementById('btn-upload').innerHTML =
+        '<i class="ti ti-check" style="font-size:15px"></i> Planilha atualizada';
+      setTimeout(()=>{
+        document.getElementById('btn-upload').innerHTML =
+          '<i class="ti ti-file-spreadsheet" style="font-size:15px"></i> Atualizar planilha';
+      }, 3000);
+      buildFilters(); renderPills(); renderMetrics(); renderDailyTable();
+      refreshCharts(); chartGenero = null; renderGeneroChart(); renderGroupList();
+      showToast('Importado: ' + newSO.length + ' reg. SO · ' + newPROD.length + ' Prod', 'success');
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ti ti-upload" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>Importar';
+    }, 300);
+
+  } catch(err) {
+    console.error('Upload error:', err);
+    showToast('Erro: ' + (err.message || String(err)), 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-upload" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>Importar';
+    document.getElementById('progress-bar').style.display = 'none';
+    document.getElementById('progress-fill').style.width = '0%';
+  }
+}
+
+// legacy vars kept for compatibility
+let fileSO = null, filePROD = null;
+function removeFilePart() {}
+
+// ── TOAST ──
+let toastTimer;
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  const icon = type==='success' ? 'circle-check' : type==='error' ? 'alert-circle' : 'info-circle';
+  t.innerHTML = `<i class="ti ti-${icon}" style="font-size:16px"></i> ${msg}`;
+  t.className = 'toast show' + (type?' '+type:'');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.className='toast', 4000);
 }
 
 // ── INIT ──
