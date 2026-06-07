@@ -7,16 +7,16 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #e8e8e8;
+    --bg: #ffffff;
     --surface: #ffffff;
-    --surface2: #f2f2f2;
-    --border: #d0d0d0;
+    --surface2: #f5f5f5;
+    --border: #e0e0e0;
     --accent: #1a1a1a;
     --accent2: #444444;
     --accent3: #888888;
     --text: #1a1a1a;
     --muted: #888888;
-    --card-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    --card-shadow: 0 2px 12px rgba(0,0,0,0.06);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -27,30 +27,8 @@
     line-height: 1.5;
     min-height: 100vh;
   }
-  header {
-    padding: 32px 40px 24px;
-    background: #111111;
-    border-bottom: 1px solid #111111;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 16px;
-  }
-  .logo-area h1 {
-    font-family: 'Syne', sans-serif;
-    font-weight: 800;
-    font-size: 20px;
-    letter-spacing: -0.5px;
-    color: #ffffff;
-  }
-  .logo-area .sub {
-    font-size: 11px;
-    color: rgba(255,255,255,0.5);
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    margin-top: 2px;
-  }
+  .logo-area h1 { display: none; }
+  .logo-area .sub { display: none; }
   .header-actions {
     display: flex;
     gap: 12px;
@@ -58,29 +36,32 @@
     flex-wrap: wrap;
   }
   .upload-btn {
-    background: rgba(255,255,255,0.1);
-    border: 1px solid rgba(255,255,255,0.25);
+    background: #1a1a1a;
+    border: 1px solid #1a1a1a;
     color: #ffffff;
-    padding: 8px 18px;
+    padding: 8px 14px;
     border-radius: 6px;
     font-family: 'Inter', sans-serif;
     font-size: 12px;
+    font-weight: 500;
     cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
+    transition: background 0.2s;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    white-space: nowrap;
   }
-  .upload-btn:hover { border-color: rgba(255,255,255,0.6); background: rgba(255,255,255,0.18); }
+  .upload-btn:hover { background: #333333; border-color: #333333; }
   .upload-btn input { display: none; }
   .pill {
-    background: rgba(255,255,255,0.12);
-    border: 1px solid rgba(255,255,255,0.25);
-    color: rgba(255,255,255,0.85);
+    background: #f2f2f2;
+    border: 1px solid #d0d0d0;
+    color: #888888;
     padding: 4px 12px;
     border-radius: 20px;
     font-size: 11px;
     font-weight: 500;
+    white-space: nowrap;
   }
 
   .controls {
@@ -603,19 +584,6 @@
 </head>
 <body>
 
-<header>
-  <div class="logo-area">
-    <h1>FLUXO DE PAGAMENTOS</h1>
-    <div class="sub">Notas Fiscais · Franquias</div>
-  </div>
-  <div class="header-actions">
-    <span class="pill" id="data-status">Dados carregados</span>
-    <label class="upload-btn">
-      ⬆ Importar Planilha
-      <input type="file" id="fileInput" accept=".xls,.xlsx,.csv">
-    </label>
-  </div>
-</header>
 
 <div class="controls">
   <div class="ctrl-group">
@@ -632,7 +600,14 @@
   </div>
   <div class="ctrl-group">
     <label>Buscar por NF</label>
-    <input type="text" id="searchInput" placeholder="ex: 720414" inputmode="numeric">
+    <div style="display:flex;gap:8px;align-items:center">
+      <input type="text" id="searchInput" placeholder="ex: 720414" inputmode="numeric">
+      <label class="upload-btn">
+        ⬆ Importar
+        <input type="file" id="fileInput" accept=".xls,.xlsx,.csv">
+      </label>
+      <span class="pill" id="data-status">Dados carregados</span>
+    </div>
   </div>
 </div>
 
