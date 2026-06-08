@@ -1467,7 +1467,7 @@ async function parseXLSX(arrayBuffer) {
         mes, loja: ent,
         franqueado: map.franqueado || '', supervisao: map.supervisao || '', regional: map.regional || '',
         desc_mes: mesMap[mes] || MESES[mes - 1] || String(mes),
-        genero, grupo, venda: 0, qtde: 0
+        genero, grupo, venda: 0, custo: 0, qtde: 0
       };
       agg[key].venda += parseFloat(r['Venda 2026'] || r['venda'] || 0) || 0;
       agg[key].custo += parseFloat(r['Custo 2026'] || r['custo'] || r['CUSTO'] || 0) || 0;
