@@ -433,8 +433,8 @@ const SO_DAY_DATA = [{"data":"2026-01-01","mes":1,"desc_mes":"JANEIRO","loja":"B
 // ── DATE RANGE STATE ──
 let dateIni = '2026-01-01';
 let dateFin = '2026-05-29';
-const DATE_MIN = '2026-01-01';
-const DATE_MAX = '2026-05-29';
+let DATE_MIN = '2026-01-01';
+let DATE_MAX = '2026-05-29';
 
 function onDateChange() {
   const ini = document.getElementById('dt-ini').value;
@@ -452,10 +452,7 @@ function onDateChange() {
 }
 
 function resetDateFilter() {
-  dateIni = DATE_MIN; dateFin = DATE_MAX;
-  document.getElementById('dt-ini').value = DATE_MIN;
-  document.getElementById('dt-fin').value = DATE_MAX;
-  syncMesFilter();
+  syncMesFilter(); // recalculates dateIni/dateFin from actual data
   buildFilters();
   renderPills(); renderMetrics(); refreshCharts(); renderGeneroChart(); renderGroupList(); updateStoreCounts();
 }
@@ -1736,13 +1733,22 @@ function syncMesFilter() {
   const mesFlt = FILTERS.find(f => f.id === 'mes');
   mesFlt.opts = ordered;
   state.mes = [...ordered];
-  // Update date input limits
+  // Update date input limits and reset date range to full span of data
   const allDays = SO_DAY_DATA.map(r=>r.data).sort();
   const minD = allDays[0] || DATE_MIN;
   const maxD = allDays[allDays.length-1] || DATE_MAX;
+  // Update global date range to match new data
+  DATE_MIN = minD;
+  DATE_MAX = maxD;
+  dateIni = minD;
+  dateFin = maxD;
   ['dt-ini','dt-fin'].forEach(id => {
     const el = document.getElementById(id);
-    if(el) { el.min = minD; el.max = maxD; }
+    if(el) {
+      el.min = minD;
+      el.max = maxD;
+      el.value = id === 'dt-ini' ? minD : maxD;
+    }
   });
 }
 
