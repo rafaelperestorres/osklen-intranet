@@ -863,10 +863,46 @@ let charts = {};
 function initCharts() {
   const xT = { font:{size:10}, color:'#aaa', autoSkip:false, maxRotation:0 };
   const gd = { color:'#f0f0ee' };
-  charts.venda = new Chart(document.getElementById('cVenda'), { type:'bar', data:{labels:[],datasets:[
-    {label:'2026',data:[],backgroundColor:'#1a1a18',borderRadius:3},
-    {label:'2024',data:[],backgroundColor:'#d4d4d0',borderRadius:3}
-  ]}, options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:gd,ticks:xT},y:{grid:gd,ticks:{font:{size:10},color:'#aaa',callback:v=>'R$'+v+'K'}}}}});
+  (()=>{
+  const growthPlugin = {
+    id:'vendaGrowthLabels',
+    afterDatasetsDraw(chart){
+      const {ctx,data}=chart;
+      const ds0=chart.getDatasetMeta(0);
+      const ds1=chart.getDatasetMeta(1);
+      if(!ds0||!ds1||!ds0.data.length||!ds1.data.length) return;
+      ctx.save();
+      ctx.font='bold 10px sans-serif';
+      ctx.textAlign='center';
+      ctx.textBaseline='bottom';
+      data.labels.forEach((_,i)=>{
+        const v26=data.datasets[0].data[i];
+        const v25=data.datasets[1].data[i];
+        if(!v25||!v26) return;
+        const pct=(v26-v25)/v25*100;
+        const sign=pct>=0?'+':'';
+        const bar=ds0.data[i];
+        if(!bar) return;
+        ctx.fillStyle=pct>=0?'#1a6b2a':'#b01c1c';
+        ctx.fillText(sign+pct.toFixed(1)+'%', bar.x, bar.y-3);
+      });
+      ctx.restore();
+    }
+  };
+  charts.venda = new Chart(document.getElementById('cVenda'), {
+    type:'bar',
+    data:{labels:[],datasets:[
+      {label:'2026',data:[],backgroundColor:'#1a1a18',borderRadius:3},
+      {label:'2025',data:[],backgroundColor:'#d4d4d0',borderRadius:3}
+    ]},
+    plugins:[growthPlugin],
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{grid:gd,ticks:xT},y:{grid:gd,ticks:{font:{size:10},color:'#aaa',callback:v=>'R$'+v+'K'}}},
+      layout:{padding:{top:18}}
+    }
+  });
+})();
 
   charts.pecas = new Chart(document.getElementById('cPecas'), { type:'line', data:{labels:[],datasets:[
     {label:'2026',data:[],borderColor:'#1a1a18',backgroundColor:'rgba(26,26,24,0.06)',tension:0.3,pointRadius:3,fill:true},
