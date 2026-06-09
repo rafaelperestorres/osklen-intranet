@@ -1921,8 +1921,8 @@ async function confirmUpload() {
     PROD_DATA.length     = 0; newPROD.forEach(r  => PROD_DATA.push(r));
     PROD_SKU_DATA.length = 0; newSKU.forEach(r   => PROD_SKU_DATA.push(r));
 
-    // ── Persist data so it survives page reload (IndexedDB) ──
-    idbSave({ so: newSO, prod: newPROD, sku: newSKU }).catch(e => console.warn('IDB save failed:', e));
+    // ── Generate updated HTML for download (so data persists) ──
+    saveUpdatedHTML(newSO, newPROD, newSKU);
 
     // Rebuild filter options
     const uFranq = [...new Set(newSO.map(r=>r.franqueado).filter(Boolean))].sort();
@@ -1961,7 +1961,7 @@ async function confirmUpload() {
         renderGroupList();
 
         updateStoreCounts();
-        showToast('Planilha importada com sucesso!', 'success');
+        showToast('Dados importados! Arquivo HTML atualizado baixado automaticamente — use-o para manter os dados.', 'success');
         btn.disabled = false;
         btn.innerHTML = '<i class="ti ti-upload" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>Importar';
       } catch(renderErr) {
@@ -2077,88 +2077,76 @@ renderMetrics();
 updateStoreCounts();
 renderDailyTable();
 initCharts();
-// ── IndexedDB helpers ──
-const IDB_NAME = 'dashboard_vendas';
-const IDB_STORE = 'dados';
-const IDB_KEY = 'snapshot';
-
-function idbOpen() {
-  return new Promise((res, rej) => {
-    const req = indexedDB.open(IDB_NAME, 1);
-    req.onupgradeneeded = e => e.target.result.createObjectStore(IDB_STORE);
-    req.onsuccess = e => res(e.target.result);
-    req.onerror   = e => rej(e.target.error);
-  });
-}
-
-async function idbSave(data) {
-  const db = await idbOpen();
-  return new Promise((res, rej) => {
-    const tx = db.transaction(IDB_STORE, 'readwrite');
-    const req = tx.objectStore(IDB_STORE).put(
-      { ...data, savedAt: new Date().toISOString() },
-      IDB_KEY
-    );
-    req.onsuccess = () => { res(); console.log('Dados salvos no IndexedDB'); };
-    req.onerror   = e  => rej(e.target.error);
-  });
-}
-
-async function idbLoad() {
-  const db = await idbOpen();
-  return new Promise((res, rej) => {
-    const tx  = db.transaction(IDB_STORE, 'readonly');
-    const req = tx.objectStore(IDB_STORE).get(IDB_KEY);
-    req.onsuccess = e => res(e.target.result || null);
-    req.onerror   = e => rej(e.target.error);
-  });
-}
-
-// ── Load persisted data on startup ──
-async function loadSavedData() {
+// ── Salvar HTML atualizado (download) ──
+// Função que gera e baixa um novo HTML com os dados embutidos
+async function saveUpdatedHTML(newSO, newPROD, newSKU) {
   try {
-    const snap = await idbLoad();
-    if(!snap || !snap.so || !snap.so.length) {
-      console.log('Nenhum dado salvo no IndexedDB.');
-      return;
+    const src = document.documentElement.outerHTML;
+
+    const soJson   = JSON.stringify(newSO);
+    const prodJson = JSON.stringify(newPROD);
+    const skuJson  = JSON.stringify(newSKU);
+
+    // Use indexOf + bracket counting — no regex, works with any data size
+    function replaceConst(src, constName, newValue) {
+      const marker = 'const ' + constName + ' =';
+      const start  = src.indexOf(marker);
+      if(start === -1) { console.warn('Marker not found:', constName); return src; }
+      const openPos = src.indexOf('[', start);
+      if(openPos === -1) return src;
+      let depth = 0, i = openPos;
+      for(; i < src.length; i++) {
+        if(src[i] === '[') depth++;
+        else if(src[i] === ']') { depth--; if(depth === 0) break; }
+      }
+      let closePos = i + 1;
+      if(src[closePos] === ';') closePos++;
+      return src.slice(0, start) + marker + ' ' + newValue + ';' + src.slice(closePos);
     }
-    const { so: savedSO, prod: savedPROD, sku: savedSKU = [], savedAt } = snap;
 
-    // Apply saved data
-    SO_DATA.length       = 0; savedSO.forEach(r   => SO_DATA.push(r));
-    PROD_DATA.length     = 0; savedPROD.forEach(r  => PROD_DATA.push(r));
-    PROD_SKU_DATA.length = 0; savedSKU.forEach(r   => PROD_SKU_DATA.push(r));
+    function replaceObj(src, constName, newValue) {
+      const marker = 'const ' + constName + ' =';
+      const start  = src.indexOf(marker);
+      if(start === -1) return src;
+      const openPos = src.indexOf('{', start);
+      if(openPos === -1) return src;
+      let depth = 0, i = openPos;
+      for(; i < src.length; i++) {
+        if(src[i] === '{') depth++;
+        else if(src[i] === '}') { depth--; if(depth === 0) break; }
+      }
+      let closePos = i + 1;
+      if(src[closePos] === ';') closePos++;
+      // skip rest of line (comments)
+      while(closePos < src.length && src[closePos] !== '\n') closePos++;
+      return src.slice(0, start) + marker + ' ' + newValue + ';' + src.slice(closePos);
+    }
 
-    // Rebuild filter options
-    const uFranq = [...new Set(savedSO.map(r=>r.franqueado).filter(Boolean))].sort();
-    const uLoja  = [...new Set(savedSO.map(r=>r.loja).filter(Boolean))].sort();
-    const uSup   = [...new Set(savedSO.map(r=>r.supervisao).filter(Boolean))].sort();
-    const uReg   = [...new Set(savedSO.map(r=>r.regional).filter(Boolean))].sort();
-    FILTERS.find(f=>f.id==='grupo').opts  = uFranq;
-    FILTERS.find(f=>f.id==='loja').opts   = uLoja;
-    FILTERS.find(f=>f.id==='sup').opts    = uSup;
-    FILTERS.find(f=>f.id==='regiao').opts = uReg;
-    FILTERS.forEach(f => state[f.id] = []);
+    let updated = replaceConst(src, 'SO_DATA', soJson);
+    updated = replaceConst(updated, 'PROD_DATA', prodJson);
+    updated = replaceConst(updated, 'PROD_SKU_DATA', skuJson);
 
-    syncMesFilter();
-    buildFilters();
-    renderPills();
-    renderMetrics();
-    renderDailyTable();
-    refreshCharts();
-    if(chartGenero) { chartGenero.destroy(); chartGenero = null; }
-    renderGeneroChart();
-    renderGroupList();
-    renderSkuList();
-    updateStoreCounts();
+    const anos2026 = newSO.filter(r => r.ano === 2026);
+    if(anos2026.length) {
+      const lastMes = Math.max(...anos2026.map(r => r.mes));
+      const MESES_NOMES = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
+      const lastMesNome = MESES_NOMES[lastMes-1] || '';
+      updated = replaceObj(updated, 'SO_META', JSON.stringify({ lastMes, lastDia: 31, lastMesNome }));
+    }
 
-    const d = new Date(savedAt);
-    document.getElementById('upload-meta').textContent =
-      'Atualizado em ' + d.toLocaleDateString('pt-BR') + ' ' +
-      d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-    console.log('Dados restaurados do IndexedDB (' + savedSO.length + ' linhas SO, salvo em ' + savedAt + ')');
+    const blob = new Blob([updated], { type: 'text/html;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    const now  = new Date();
+    a.download = 'dashboard_vendas_' + now.toISOString().slice(0,10) + '.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    console.log('HTML atualizado baixado com sucesso');
   } catch(err) {
-    console.warn('Erro ao carregar dados salvos:', err.message);
+    console.warn('Erro ao gerar HTML:', err.message);
   }
 }
 
@@ -2168,8 +2156,6 @@ renderGeneroChart();
 renderGroupList();
   renderSkuList();
   updateAbcButtons();
-// Load any previously saved import data
-loadSavedData();
 </script>
 </body>
 </html>
