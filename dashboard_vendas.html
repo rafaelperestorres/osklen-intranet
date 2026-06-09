@@ -336,7 +336,17 @@
   <div class="cc" style="margin-bottom:12px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;flex-wrap:wrap">
       <div class="ct" style="margin-bottom:0">Produtos mais vendidos</div>
-      <div style="display:flex;align-items:center;gap:8px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <!-- ABC filter buttons -->
+        <div style="display:flex;align-items:center;gap:4px">
+          <span style="font-size:9px;font-weight:700;color:var(--text-hint);text-transform:uppercase;letter-spacing:0.5px;margin-right:2px">Curva</span>
+          <button id="btn-abc-A" onclick="toggleAbcFilter('A')"
+            style="padding:3px 10px;border-radius:5px;border:1.5px solid #16a34a;font-size:10px;font-weight:700;color:#16a34a;background:transparent;cursor:pointer;transition:all 0.15s">A</button>
+          <button id="btn-abc-B" onclick="toggleAbcFilter('B')"
+            style="padding:3px 10px;border-radius:5px;border:1.5px solid #d97706;font-size:10px;font-weight:700;color:#d97706;background:transparent;cursor:pointer;transition:all 0.15s">B</button>
+          <button id="btn-abc-C" onclick="toggleAbcFilter('C')"
+            style="padding:3px 10px;border-radius:5px;border:1.5px solid #9ca3af;font-size:10px;font-weight:700;color:#9ca3af;background:transparent;cursor:pointer;transition:all 0.15s">C</button>
+        </div>
         <span id="sku-filter-badge" style="display:none;font-size:10px;padding:2px 10px;background:var(--black);color:#fff;border-radius:10px;cursor:pointer" onclick="clearSkuFilter()">Limpar filtro ×</span>
         <span style="font-size:10px;color:var(--text-hint)" id="sku-count"></span>
       </div>
@@ -345,7 +355,8 @@
       <table style="width:100%;border-collapse:collapse;font-size:11px">
         <thead>
           <tr style="position:sticky;top:0;background:var(--white);z-index:2">
-            <th style="text-align:left;padding:4px 8px 8px;font-size:9px;font-weight:700;color:var(--text-hint);text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;border-bottom:1px solid var(--border)">#</th>
+            <th style="text-align:right;padding:4px 8px 8px;font-size:9px;font-weight:700;color:var(--text-hint);text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;border-bottom:1px solid var(--border)">#</th>
+            <th style="text-align:center;padding:4px 8px 8px;font-size:9px;font-weight:700;color:var(--text-hint);text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;border-bottom:1px solid var(--border)">Curva</th>
             <th style="text-align:left;padding:4px 8px 8px;font-size:9px;font-weight:700;color:var(--text-hint);text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;border-bottom:1px solid var(--border)">Ref | Cód. Cor</th>
             <th style="text-align:left;padding:4px 8px 8px;font-size:9px;font-weight:700;color:var(--text-hint);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border)">Descrição</th>
             <th style="text-align:left;padding:4px 8px 8px;font-size:9px;font-weight:700;color:var(--text-hint);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border)">Cor</th>
@@ -353,6 +364,8 @@
             <th style="text-align:left;padding:4px 8px 8px;font-size:9px;font-weight:700;color:var(--text-hint);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border)">Grupo</th>
             <th style="text-align:right;padding:4px 8px 8px;font-size:9px;font-weight:700;color:var(--text-hint);text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;border-bottom:1px solid var(--border)">Venda 2026</th>
             <th style="text-align:right;padding:4px 8px 8px;font-size:9px;font-weight:700;color:var(--text-hint);text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;border-bottom:1px solid var(--border)">Qtde</th>
+            <th style="text-align:right;padding:4px 8px 8px;font-size:9px;font-weight:700;color:var(--text-hint);text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;border-bottom:1px solid var(--border)">% Part.</th>
+            <th style="text-align:right;padding:4px 8px 8px;font-size:9px;font-weight:700;color:var(--text-hint);text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;border-bottom:1px solid var(--border)">% Acum.</th>
           </tr>
         </thead>
         <tbody id="sku-tbody"></tbody>
@@ -724,6 +737,7 @@ function updateFilter(fid) {
   const f = FILTERS.find(x=>x.id===fid);
   document.getElementById('lbl-'+fid).innerHTML = getLabelText(f);
   skuGrupos = []; // reset group panel selection when filterbar changes
+  skuAbcFilter = []; updateAbcButtons(); // reset ABC filter
   renderList(f); updateFilterDot(fid, f); renderPills(); renderMetrics(); refreshCharts(); renderGeneroChart(); renderGroupList(); renderSkuList(); updateStoreCounts();
   if(fid==='mes') renderDailyTable();
 }
@@ -1300,11 +1314,37 @@ function renderGeneroChart() {
 // ── PRODUCT SKU PANEL ──
 // selectedGenders (from gender chart) → filter by genero  — supports multiple
 // skuGrupos       (from group list rows) → filter by grupo — supports multiple
-let skuGrupos = [];   // array of selected grupos from group list panel
+// skuAbcFilter    (from ABC buttons)    → filter by curve — supports multiple
+let skuGrupos    = [];   // array of selected grupos from group list panel
+let skuAbcFilter = [];   // [] = all curves; ['A'] = only A; ['A','B'] = A and B
+
+const ABC_COLORS = { A: '#16a34a', B: '#d97706', C: '#9ca3af' };
+const ABC_BG     = { A: '#dcfce7', B: '#fef3c7', C: '#f3f4f6' };
+const ABC_ACTIVE_BG = { A: '#16a34a', B: '#d97706', C: '#9ca3af' };
+
+function toggleAbcFilter(cls) {
+  const idx = skuAbcFilter.indexOf(cls);
+  if(idx >= 0) skuAbcFilter.splice(idx, 1);
+  else skuAbcFilter.push(cls);
+  updateAbcButtons();
+  renderSkuList();
+}
+
+function updateAbcButtons() {
+  ['A','B','C'].forEach(cls => {
+    const btn = document.getElementById('btn-abc-' + cls);
+    if(!btn) return;
+    const active = skuAbcFilter.includes(cls);
+    btn.style.background = active ? ABC_ACTIVE_BG[cls] : 'transparent';
+    btn.style.color       = active ? '#fff' : ABC_ACTIVE_BG[cls];
+  });
+}
 
 function clearSkuFilter() {
   skuGrupos = [];
+  skuAbcFilter = [];
   selectedGenders = [];
+  updateAbcButtons();
   updateGenderUI();  // resets chart + calls renderGroupList + renderSkuList chain
 }
 
@@ -1368,9 +1408,28 @@ function renderSkuList() {
 
   // Sort descending by venda
   const sorted = [...agg.values()].filter(p => p.venda > 0).sort((a,b) => b.venda - a.venda);
-  const top = sorted.slice(0, 150);
 
   const totalVenda = sorted.reduce((s,p) => s + p.venda, 0);
+
+  // ── Curva ABC ──
+  // A: até 80% acumulado | B: 80–95% | C: acima de 95%
+  let acum = 0;
+  sorted.forEach(p => {
+    p.pct  = totalVenda > 0 ? (p.venda / totalVenda * 100) : 0;
+    acum  += p.pct;
+    p.acum = acum;
+    p.abc  = p.acum <= 80 ? 'A' : p.acum <= 95 ? 'B' : 'C';
+  });
+
+  // Summary counters (always from full sorted, before ABC filter)
+  const cntA = sorted.filter(p=>p.abc==='A').length;
+  const cntB = sorted.filter(p=>p.abc==='B').length;
+  const cntC = sorted.filter(p=>p.abc==='C').length;
+
+  // Apply ABC filter if active
+  const displayed = skuAbcFilter.length > 0
+    ? sorted.filter(p => skuAbcFilter.includes(p.abc))
+    : sorted;
 
   // Update badge
   const badge = document.getElementById('sku-filter-badge');
@@ -1384,29 +1443,39 @@ function renderSkuList() {
     if(hasGrp) parts.push(skuGrupos.length === 1 ? skuGrupos[0] : skuGrupos.length + ' grupos');
     badge.textContent = parts.join(' + ') + ' ×';
   }
+
   const countEl = document.getElementById('sku-count');
-  if(countEl) countEl.textContent = sorted.length + ' produtos';
+  if(countEl) countEl.innerHTML =
+    `${sorted.length} produtos &nbsp;·&nbsp; ` +
+    `<span style="color:${ABC_COLORS.A};font-weight:700">A: ${cntA}</span> &nbsp;` +
+    `<span style="color:${ABC_COLORS.B};font-weight:700">B: ${cntB}</span> &nbsp;` +
+    `<span style="color:${ABC_COLORS.C};font-weight:700">C: ${cntC}</span>`;
 
   const tbody = document.getElementById('sku-tbody');
   if(!tbody) return;
 
-  if(!top.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-hint);font-size:12px">Nenhum produto para os filtros selecionados.</td></tr>';
+  if(!displayed.length) {
+    tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--text-hint);font-size:12px">Nenhum produto para os filtros selecionados.</td></tr>';
     return;
   }
 
-  const maxV = top[0].venda;
-  tbody.innerHTML = top.map((p, i) => {
-    const pct = totalVenda > 0 ? (p.venda / totalVenda * 100) : 0;
-    const barW = maxV > 0 ? (p.venda / maxV * 100) : 0;
-    const pctStr = pct >= 0.1 ? pct.toFixed(1)+'%' : '<0.1%';
+  const maxV = displayed[0].venda;
+  tbody.innerHTML = displayed.map((p, i) => {
+    const barW  = maxV > 0 ? (p.venda / maxV * 100) : 0;
+    const pctStr = p.pct >= 0.1 ? p.pct.toFixed(1)+'%' : '<0.1%';
+    const acumStr = p.acum.toFixed(1) + '%';
+    const abcColor = ABC_COLORS[p.abc];
+    const abcBg    = ABC_BG[p.abc];
     return `<tr style="border-bottom:0.5px solid var(--border-light)">
-      <td style="padding:5px 8px;color:var(--text-hint);font-size:10px;font-variant-numeric:tabular-nums;min-width:28px;text-align:right">${i+1}</td>
+      <td style="padding:5px 8px;color:var(--text-hint);font-size:10px;font-variant-numeric:tabular-nums;text-align:right;min-width:26px">${i+1}</td>
+      <td style="padding:4px 8px;text-align:center;min-width:32px">
+        <span style="display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;color:${abcColor};background:${abcBg};letter-spacing:0.3px">${p.abc}</span>
+      </td>
       <td style="padding:5px 10px;white-space:nowrap;font-weight:600;font-size:10.5px;color:var(--text)">${p.ref}<span style="color:var(--text-hint);font-weight:400"> | ${p.cod_cor}</span></td>
       <td style="padding:5px 10px;min-width:200px">
         <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px">${p.desc}</div>
         <div style="height:3px;background:var(--border-light);border-radius:2px;margin-top:3px;max-width:280px">
-          <div style="height:3px;background:var(--black);border-radius:2px;width:${barW.toFixed(1)}%"></div>
+          <div style="height:3px;background:${abcColor};border-radius:2px;width:${barW.toFixed(1)}%"></div>
         </div>
       </td>
       <td style="padding:5px 10px;font-size:10px;color:var(--text-muted);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.cor}</td>
@@ -1414,6 +1483,8 @@ function renderSkuList() {
       <td style="padding:5px 10px;font-size:10px;color:var(--text-muted);white-space:nowrap">${p.grupo||'—'}</td>
       <td style="padding:5px 10px;text-align:right;font-weight:700;font-size:11px;white-space:nowrap">${fmtAdapt(p.venda)}</td>
       <td style="padding:5px 10px;text-align:right;font-size:10.5px;color:var(--text-muted)">${p.qtde.toLocaleString('pt-BR')}</td>
+      <td style="padding:5px 10px;text-align:right;font-size:10px;color:var(--text-hint)">${pctStr}</td>
+      <td style="padding:5px 10px;text-align:right;font-size:10px;color:var(--text-hint)">${acumStr}</td>
     </tr>`;
   }).join('');
 }
@@ -1927,6 +1998,7 @@ function clearAllFilters() {
   state.loja   = [];
   state.sup    = [];
   state.regiao = [];
+  skuGrupos = []; skuAbcFilter = []; updateAbcButtons();
   buildFilters();
   renderPills();
   renderMetrics();
@@ -1980,6 +2052,7 @@ buildGenderChips();
 renderGeneroChart();
 renderGroupList();
   renderSkuList();
+  updateAbcButtons();
 </script>
 </body>
 </html>
