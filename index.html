@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OSKLEN — Intranet</title>
+
+<!-- Ícones -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+
+<!-- Estilos — ordem importa: tokens → base → componentes → layout -->
+<link rel="stylesheet" href="styles/tokens.css">
+<link rel="stylesheet" href="styles/base.css">
+<link rel="stylesheet" href="styles/sidebar.css">
+<link rel="stylesheet" href="styles/header.css">
+<link rel="stylesheet" href="styles/components.css">
+
+<!-- Chart.js — carregado uma única vez para toda a aplicação -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" defer></script>
+<!-- XLSX — carregado uma única vez para toda a aplicação -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+
+<style>
+/* ── Layout raiz ── */
+#app {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+/* Área principal (tudo exceto a sidebar) */
+#main-area {
+  margin-left: var(--sidebar-width);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* Área de conteúdo scrollável */
+#content-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--content-padding);
+  background: var(--bg);
+  position: relative;
+}
+
+/* ── Login ── */
+#login-screen {
+  position: fixed;
+  inset: 0;
+  background: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+.login-box {
+  width: 360px;
+  padding: 40px;
+  background: #1a1a1a;
+  border-radius: var(--radius-xl);
+  border: 1px solid #2a2a2a;
+}
+.login-logo {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  text-align: center;
+  margin-bottom: 4px;
+}
+.login-sub {
+  font-size: 11px;
+  color: #555;
+  text-align: center;
+  margin-bottom: 32px;
+  letter-spacing: 1px;
+}
+.login-label {
+  font-size: 11px;
+  color: #666;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  display: block;
+}
+.login-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: #111;
+  border: 1px solid #2a2a2a;
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: 13px;
+  font-family: var(--font);
+  margin-bottom: 14px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.login-input:focus { border-color: #555; }
+.login-btn {
+  width: 100%;
+  padding: 11px;
+  background: #fff;
+  color: #111;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  font-family: var(--font);
+  text-transform: uppercase;
+  transition: background 0.2s;
+  margin-top: 4px;
+}
+.login-btn:hover { background: #e0e0e0; }
+.login-error {
+  font-size: 11px;
+  color: #c0392b;
+  text-align: center;
+  margin-top: 12px;
+  display: none;
+}
+
+/* ── Loading inicial ── */
+#initial-loading {
+  position: fixed;
+  inset: 0;
+  background: var(--white);
+  z-index: 8000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+}
+.ld-logo { font-size: 20px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; }
+.ld-bar  { width: 180px; height: 3px; background: var(--gray-200); border-radius: 2px; overflow: hidden; }
+.ld-fill { height: 100%; background: var(--black); border-radius: 2px; animation: loading-bar 1.4s ease-in-out infinite; }
+.ld-txt  { font-size: 12px; color: var(--gray-500); }
+
+/* ── Toast global ── */
+#global-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--black);
+  color: var(--white);
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  z-index: 1000;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.25s, transform 0.25s;
+  pointer-events: none;
+  box-shadow: var(--shadow-md);
+}
+#global-toast.show { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- Configuração Supabase (dev local) — ignorado se ausente -->
+<script>
+  try {
+    // env.js define window.__SUPABASE_CONFIG = { url, anon }
+    // Crie /config/env.js a partir de /config/env.example.js
+  } catch(_) {}
+</script>
+<script src="/config/env.js" onerror="void 0"></script>
+
+<!-- Loading inicial (antes do JS carregar) -->
+<div id="initial-loading">
+  <div class="ld-logo">OSKLEN</div>
+  <div class="ld-bar"><div class="ld-fill"></div></div>
+  <div class="ld-txt">Carregando...</div>
+</div>
+
+<!-- Tela de Login -->
+<div id="login-screen" style="display:none">
+  <div class="login-box">
+    <div class="login-logo">OSKLEN</div>
+    <div class="login-sub">INTRANET</div>
+    <!-- O label muda dinamicamente: "E-mail" no modo Supabase, "Usuário" no modo local -->
+    <label class="login-label" id="login-user-label">Usuário</label>
+    <input class="login-input" type="text" id="login-user"
+      placeholder="Seu nome" autocomplete="username">
+    <label class="login-label">Senha</label>
+    <input class="login-input" type="password" id="login-pass"
+      placeholder="••••••••" autocomplete="current-password">
+    <button class="login-btn" id="login-btn">Entrar</button>
+    <div class="login-error" id="login-error"></div>
+    <!-- Indicador de modo (visível apenas em dev) -->
+    <div id="login-mode-badge" style="text-align:center;margin-top:14px;font-size:10px;color:#333;display:none">
+      modo: <span id="login-mode-text">local</span>
+    </div>
+  </div>
+</div>
+
+<!-- Aplicação Principal -->
+<div id="app" style="display:none">
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar" aria-label="Menu principal"></aside>
+
+  <!-- Área principal -->
+  <div id="main-area">
+    <!-- Topbar -->
+    <header class="topbar" id="topbar" role="banner"></header>
+    <!-- Conteúdo das páginas -->
+    <main id="content-area" role="main" aria-live="polite"></main>
+  </div>
+</div>
+
+<!-- Toast global -->
+<div id="global-toast" role="status" aria-live="polite"></div>
+
+<!-- Aplicação (ES Modules) -->
+<script type="module">
+import authService   from './services/authService.js';
+import Sidebar       from './components/Sidebar.js';
+import Header        from './components/Header.js';
+import eventBus      from './store/eventBus.js';
+import { ROUTES, DEFAULT_ROUTE } from './config/app.config.js';
+
+// ── Elementos do DOM ──
+const $loading     = document.getElementById('initial-loading');
+const $loginScreen = document.getElementById('login-screen');
+const $app         = document.getElementById('app');
+const $loginBtn    = document.getElementById('login-btn');
+const $loginPass   = document.getElementById('login-pass');
+const $loginError  = document.getElementById('login-error');
+const $toast       = document.getElementById('global-toast');
+
+// ── Instâncias de componentes ──
+const sidebar = new Sidebar(document.getElementById('sidebar'));
+const header  = new Header(document.getElementById('topbar'));
+const $content = document.getElementById('content-area');
+
+// ── Estado do router ──
+let _currentPageId  = null;
+let _currentModule  = null;
+let _loadingRoute   = false;
+
+// ── Bootstrap ─────────────────────────────────────────────────
+
+async function boot() {
+  await document.fonts.ready;
+
+  // Aguardar inicialização do authService (detecta Supabase ou local)
+  await authService.ready();
+
+  $loading.style.display = 'none';
+
+  // Adaptar label do campo e mostrar modo em desenvolvimento
+  _adaptLoginUI();
+
+  const session = authService.getSession();
+  if (session) {
+    await startApp(session);
+  } else {
+    showLogin();
+  }
+}
+
+function _adaptLoginUI() {
+  const isSupabase = !!window.__SUPABASE_CONFIG?.url;
+  const labelEl    = document.getElementById('login-user-label');
+  const userInput  = document.getElementById('login-user');
+  const badgeEl    = document.getElementById('login-mode-badge');
+  const modeText   = document.getElementById('login-mode-text');
+
+  if (isSupabase) {
+    if (labelEl)   labelEl.textContent      = 'E-mail';
+    if (userInput) userInput.placeholder    = 'seu@email.com';
+    if (userInput) userInput.type           = 'email';
+    if (modeText)  modeText.textContent     = 'Supabase Auth';
+  } else {
+    if (modeText)  modeText.textContent     = 'local (dev)';
+  }
+
+  // Mostrar badge de modo apenas em localhost
+  if (badgeEl && location.hostname === 'localhost') {
+    badgeEl.style.display = 'block';
+  }
+}
+
+function showLogin() {
+  $loginScreen.style.display = 'flex';
+  $app.style.display = 'none';
+  setTimeout(() => document.getElementById('login-user')?.focus(), 100);
+}
+
+async function startApp(session) {
+  $loginScreen.style.display = 'none';
+  $app.style.display = 'flex';
+
+  sidebar.render(session);
+  header.render(session);
+
+  const hashRoute = location.hash.replace('#', '') || DEFAULT_ROUTE;
+  await navigateTo(hashRoute);
+}
+
+// ── Login ──────────────────────────────────────────────────────
+
+$loginBtn.addEventListener('click', doLogin);
+$loginPass.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+async function doLogin() {
+  const identifier = document.getElementById('login-user').value.trim();
+  const pass       = document.getElementById('login-pass').value.trim();
+
+  if (!identifier || !pass) {
+    $loginError.style.display = 'block';
+    $loginError.textContent   = 'Preencha todos os campos.';
+    return;
+  }
+
+  $loginBtn.textContent  = 'Entrando...';
+  $loginBtn.disabled     = true;
+  $loginError.style.display = 'none';
+
+  // authService.login é async na versão Supabase, síncrono na local — await cobre os dois
+  const result = await authService.login(identifier, pass);
+
+  $loginBtn.textContent = 'Entrar';
+  $loginBtn.disabled    = false;
+
+  if (result.ok) {
+    await startApp(result.user);
+  } else {
+    $loginError.style.display = 'block';
+    $loginError.textContent   = result.error;
+  }
+}
+
+// ── Router ─────────────────────────────────────────────────────
+
+/**
+ * Navega para uma rota pelo ID.
+ * Faz unmount da página atual e mount da nova.
+ */
+async function navigateTo(routeId) {
+  if (_loadingRoute || routeId === _currentPageId) return;
+
+  const route = ROUTES.find(r => r.id === routeId && !r.pending);
+  if (!route) {
+    showToast(`Página "${routeId}" não encontrada.`);
+    return;
+  }
+
+  _loadingRoute = true;
+
+  // Unmount da página atual
+  if (_currentModule?.unmount) {
+    try { _currentModule.unmount(); } catch(e) {}
+  }
+  _currentModule = null;
+  _currentPageId = null;
+
+  // Skeleton de carregamento
+  $content.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;padding:60px">
+      <div class="spinner"></div>
+    </div>
+  `;
+
+  // Atualizar sidebar e header
+  eventBus.emit('route:change', routeId);
+  location.hash = routeId;
+
+  try {
+    // Import dinâmico do módulo da página
+    const mod = await import(route.module);
+    _currentModule = mod;
+    _currentPageId = routeId;
+
+    $content.innerHTML = '';
+    await mod.mount($content);
+  } catch (err) {
+    console.error('[Router] Erro ao carregar módulo:', err);
+    $content.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state-icon"><i class="ti ti-alert-circle"></i></div>
+        <div class="empty-state-title">Erro ao carregar página</div>
+        <div class="empty-state-sub">${err.message}</div>
+      </div>
+    `;
+  }
+
+  _loadingRoute = false;
+}
+
+// ── EventBus — integrações globais ────────────────────────────
+
+eventBus.on('route:change', (routeId) => {
+  if (routeId !== _currentPageId) navigateTo(routeId);
+});
+
+eventBus.on('auth:logout', () => {
+  if (_currentModule?.unmount) { try { _currentModule.unmount(); } catch(e) {} }
+  _currentModule  = null;
+  _currentPageId  = null;
+  authService.logout();
+  showLogin();
+});
+
+eventBus.on('toast:show', ({ message, type = 'default' }) => showToast(message));
+
+// ── Toast ──────────────────────────────────────────────────────
+
+let _toastTimeout = null;
+
+function showToast(message, duration = 3000) {
+  $toast.textContent = message;
+  $toast.classList.add('show');
+  if (_toastTimeout) clearTimeout(_toastTimeout);
+  _toastTimeout = setTimeout(() => $toast.classList.remove('show'), duration);
+}
+
+// Expõe globalmente para uso em módulos sem import
+window.showToast = showToast;
+
+// ── Iniciar ────────────────────────────────────────────────────
+boot();
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# Credenciais Supabase — NUNCA commitar
+config/env.js
+
+# Node (se usar ferramentas de build futuras)
+node_modules/
+.env
+.env.local
+.env.production
+
+# macOS
+.DS_Store
+
+# Vercel
+.vercel
