@@ -399,7 +399,7 @@ const FILTERS = [
   { id:'regiao', label:'Região',         opts: ['CENTRO-OESTE','NORDESTE','NORTE','SUDESTE','SUL'] },
 ];
 const state = {};
-FILTERS.forEach(f => state[f.id] = [...f.opts]);
+FILTERS.forEach(f => state[f.id] = []); // empty = all selected
 let openDropdown = null, currentMode = 'all', selectedFile = null;
 
 // ── REAL DATA FROM sellout.xlsx ──
@@ -479,43 +479,42 @@ function syncMesFromDateRange() {
 function getDateFilteredDay() {
   return SO_DAY_DATA.filter(r => {
     if(r.data < dateIni || r.data > dateFin) return false;
-    const gOK = state.grupo.length  === FILTERS.find(f=>f.id==='grupo').opts.length  || state.grupo.includes(r.franqueado);
-    const lOK = state.loja.length   === FILTERS.find(f=>f.id==='loja').opts.length   || state.loja.includes(r.loja);
-    const sOK = state.sup.length    === FILTERS.find(f=>f.id==='sup').opts.length    || state.sup.includes(r.supervisao);
-    const rOK = state.regiao.length === FILTERS.find(f=>f.id==='regiao').opts.length || state.regiao.includes(r.regional);
+    const gOK = activeValues('grupo').includes(r.franqueado);
+    const lOK = activeValues('loja').includes(r.loja);
+    const sOK = activeValues('sup').includes(r.supervisao);
+    const rOK = activeValues('regiao').includes(r.regional);
     return gOK && lOK && sOK && rOK;
   });
 }
 
 // ── filter matching helpers ──
 function matchYOY(r) {
-  const mOK  = state.mes.includes(r.desc_mes);
-  const gOK  = state.grupo.length  === FILTERS.find(f=>f.id==='grupo').opts.length  || state.grupo.includes(r.franqueado);
-  const lOK  = state.loja.length   === FILTERS.find(f=>f.id==='loja').opts.length   || state.loja.includes(r.loja);
-  const sOK  = state.sup.length    === FILTERS.find(f=>f.id==='sup').opts.length    || state.sup.includes(r.supervisao);
-  const rOK  = state.regiao.length === FILTERS.find(f=>f.id==='regiao').opts.length || state.regiao.includes(r.regional);
+  const mOK  = activeValues('mes').includes(r.desc_mes);
+  const gOK  = activeValues('grupo').includes(r.franqueado);
+  const lOK  = activeValues('loja').includes(r.loja);
+  const sOK  = activeValues('sup').includes(r.supervisao);
+  const rOK  = activeValues('regiao').includes(r.regional);
   return mOK && gOK && lOK && sOK && rOK;
 }
 function getFilteredYOY() { return YOY_DATA.filter(matchYOY); }
 
 function matchSO(r) {
-  const mOK  = state.mes.includes(r.desc_mes);
-  const gOK  = state.grupo.includes(r.franqueado);
-  const lOK  = state.loja.includes(r.loja);
-  const sOK  = state.sup.includes(r.supervisao);
-  const rOK  = state.regiao.includes(r.regional);
+  const mOK  = activeValues('mes').includes(r.desc_mes);
+  const gOK  = activeValues('grupo').includes(r.franqueado);
+  const lOK  = activeValues('loja').includes(r.loja);
+  const sOK  = activeValues('sup').includes(r.supervisao);
+  const rOK  = activeValues('regiao').includes(r.regional);
   return mOK && gOK && lOK && sOK && rOK;
-  // Note: no year filter — getFilteredSO returns all years, split in renderMetrics
 }
 function getFilteredSO_byYear(ano) {
   return SO_DATA.filter(r => r.ano === ano && matchSO(r));
 }
 function matchPROD(r) {
-  const mOK  = state.mes.includes(r.desc_mes);
-  const gOK  = state.grupo.includes(r.franqueado);
-  const lOK  = state.loja.includes(r.loja);
-  const sOK  = state.sup.includes(r.supervisao);
-  const rOK  = state.regiao.includes(r.regional);
+  const mOK  = activeValues('mes').includes(r.desc_mes);
+  const gOK  = activeValues('grupo').includes(r.franqueado);
+  const lOK  = activeValues('loja').includes(r.loja);
+  const sOK  = activeValues('sup').includes(r.supervisao);
+  const rOK  = activeValues('regiao').includes(r.regional);
   return mOK && gOK && lOK && sOK && rOK;
 }
 
@@ -563,7 +562,7 @@ const fmtBRL = n => n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
 // labels for chart x-axis: months selected, in order
 function filteredLabels() {
-  return MESES_ORDER.filter(m => state.mes.includes(m));
+  return MESES_ORDER.filter(m => activeValues('mes').includes(m));
 }
 // SO aggregated monthly series for charts
 function filteredChartData() {
@@ -625,10 +624,9 @@ function buildMultiSelect(f) {
 function renderList(f) {
   const list = document.getElementById('list-'+f.id);
   const items = f.opts;
-  const allSelected = state[f.id].length === f.opts.length;
+  const allActive = isAllSelected(f.id); // empty = all = no checkmarks
   list.innerHTML = items.map(o => {
-    // Only show checkmark when it's a partial selection
-    const isChecked = !allSelected && state[f.id].includes(String(o));
+    const isChecked = !allActive && state[f.id].includes(String(o));
     return `<label class="ms-item">
       <input type="checkbox" ${isChecked?'checked':''} onchange="toggleOpt('${f.id}','${String(o)}',this.checked)">
       <span>${o}</span></label>`;
@@ -636,8 +634,7 @@ function renderList(f) {
 }
 function getLabelText(f) {
   const sel = state[f.id];
-  if(!sel.length) return '<span style="color:#bbb">Nenhum</span>';
-  if(sel.length === f.opts.length) return '<span style="color:var(--text-hint)">Todos</span>';
+  if(sel.length === 0) return '<span style="color:var(--text-hint)">Todos</span>';
   if(sel.length <= 2) return sel.join(', ');
   return `<span style="color:var(--text)">${sel.length} selecionados</span>`;
 }
@@ -654,30 +651,39 @@ document.addEventListener('click', e => {
     document.getElementById('drop-'+openDropdown).style.display = 'none'; openDropdown = null;
   }
 });
+// state[fid] = [] means "all selected" (no filter active)
+// state[fid] = [v1, v2...] means only those values are active
+function isAllSelected(fid) {
+  return state[fid].length === 0;
+}
+function activeValues(fid) {
+  const f = FILTERS.find(x=>x.id===fid);
+  return state[fid].length === 0 ? f.opts : state[fid];
+}
 function toggleOpt(fid, val, checked) {
-  const allSelected = state[fid].length === FILTERS.find(f=>f.id===fid).opts.length;
-  if(allSelected && checked) {
-    // Was showing all — user clicked one: select ONLY this one
-    state[fid] = [val];
-  } else if(allSelected && !checked) {
-    // Was showing all — user unchecked: deselect all except this... 
-    // Actually clicking unchecked box in all-selected mode = select only that item
+  const f = FILTERS.find(x=>x.id===fid);
+  if(isAllSelected(fid)) {
+    // All were implicitly selected; first interaction selects only this one
     state[fid] = [val];
   } else {
-    if(checked) { if(!state[fid].includes(val)) state[fid].push(val); }
-    else state[fid] = state[fid].filter(v=>v!==val);
-    // If all items are now selected, reset to "all" state
-    const f = FILTERS.find(x=>x.id===fid);
-    if(state[fid].length === f.opts.length) state[fid] = [...f.opts];
+    if(checked) {
+      if(!state[fid].includes(val)) state[fid].push(val);
+      if(state[fid].length === f.opts.length) state[fid] = []; // back to "all"
+    } else {
+      state[fid] = state[fid].filter(v=>v!==val);
+      // If nothing left selected, treat as "all"
+      if(state[fid].length === 0) state[fid] = [];
+    }
   }
   updateFilter(fid);
 }
 function selectAll(fid) {
-  state[fid] = [...FILTERS.find(x=>x.id===fid).opts];
+  state[fid] = []; // empty = all
   updateFilter(fid);
 }
 function clearFilter(e, fid) {
-  e.stopPropagation(); state[fid] = [];
+  e.stopPropagation();
+  state[fid] = []; // empty = all
   if(openDropdown===fid) { document.getElementById('drop-'+fid).style.display='none'; openDropdown=null; }
   updateFilter(fid);
 }
@@ -694,7 +700,7 @@ function cascadeFilters(changedFid) {
   const H = FILTER_HIER;
   const inter = (a, b) => a.length === 0 ? b : b.length === 0 ? a : a.filter(x => b.includes(x));
   const fAll = id => FILTERS.find(f=>f.id===id);
-  const isAll = id => state[id].length === fAll(id).opts.length;
+  const isAll = id => state[id].length === 0; // empty = all selected
 
   // Derive available options from current selections (excluding the changed filter)
   function availFrom(maps, keys) {
@@ -735,7 +741,7 @@ function cascadeFilters(changedFid) {
     const f = fAll(fid);
     f.opts = avail.length ? avail.sort() : allOpts;
     state[fid] = state[fid].filter(v => f.opts.includes(v));
-    if(!state[fid].length) state[fid] = [...f.opts];
+    if(!state[fid].length) state[fid] = []; // empty = all
     if(document.getElementById('list-'+fid)) {
       document.getElementById('lbl-'+fid).innerHTML = getLabelText(f);
       renderList(f);
@@ -749,7 +755,7 @@ function cascadeFilters(changedFid) {
 }
 function renderPills() {
   const el = document.getElementById('active-pills'); const pills = [];
-  FILTERS.forEach(f=>{ if(state[f.id].length>0 && state[f.id].length<f.opts.length) state[f.id].forEach(v=>pills.push({fid:f.id,val:v})); });
+  FILTERS.forEach(f=>{ if(state[f.id].length>0) state[f.id].forEach(v=>pills.push({fid:f.id,val:v})); });
   el.innerHTML = pills.slice(0,12).map(p=>`<span class="af-pill">${p.val}
     <button onclick="toggleOpt('${p.fid}','${p.val}',false)" aria-label="Remover ${p.val}"><i class="ti ti-x" style="font-size:11px"></i></button>
   </span>`).join('') + (pills.length>12?`<span class="af-pill">+${pills.length-12}</span>`:'');
@@ -893,10 +899,10 @@ function renderMetrics() {
   const meses2026set = new Set(SO_DATA.filter(r => r.ano===2026).map(r => r.desc_mes));
   const prodRows25 = PROD_DATA.filter(r => {
     if(!meses2026set.has(r.desc_mes)) return false;
-    if(state.grupo.length  < FILTERS.find(f=>f.id==='grupo').opts.length  && !state.grupo.includes(r.franqueado))  return false;
-    if(state.loja.length   < FILTERS.find(f=>f.id==='loja').opts.length   && !state.loja.includes(r.loja))          return false;
-    if(state.sup.length    < FILTERS.find(f=>f.id==='sup').opts.length    && !state.sup.includes(r.supervisao))     return false;
-    if(state.regiao.length < FILTERS.find(f=>f.id==='regiao').opts.length && !state.regiao.includes(r.regional))    return false;
+    if(!activeValues('grupo').includes(r.franqueado))  return false;
+    if(!activeValues('loja').includes(r.loja))          return false;
+    if(!activeValues('sup').includes(r.supervisao))     return false;
+    if(!activeValues('regiao').includes(r.regional))    return false;
     return true;
   });
   const prodVenda25 = prodRows25.reduce((s,r) => s + r.venda, 0);
@@ -1669,7 +1675,7 @@ async function confirmUpload() {
     FILTERS.find(f=>f.id==='loja').opts   = uLoja;
     FILTERS.find(f=>f.id==='sup').opts    = uSup;
     FILTERS.find(f=>f.id==='regiao').opts = uReg;
-    FILTERS.forEach(f => state[f.id] = [...f.opts]);
+    FILTERS.forEach(f => state[f.id] = []); // empty = all selected
 
     pf.style.width = '100%';
     setTimeout(() => {
@@ -1744,7 +1750,7 @@ function rebuildDropdown(fid) {
 function updateFilterDot(fid, f) {
   const dot = document.getElementById('dot-'+fid);
   if(!dot) return;
-  dot.style.display = (state[fid].length > 0 && state[fid].length < f.opts.length) ? 'inline-block' : 'none';
+  dot.style.display = state[fid].length > 0 ? 'inline-block' : 'none'; // dot = active filter
 }
 
 // ── CLEAR ALL FILTERS ──
@@ -1760,10 +1766,10 @@ function clearAllFilters() {
   fLoja.opts  = allLoja;
   fSup.opts   = Object.keys(FILTER_HIER.sup_loja).sort();
   fReg.opts   = Object.keys(FILTER_HIER.reg_loja).sort();
-  state.grupo  = [...fGrupo.opts];
-  state.loja   = [...fLoja.opts];
-  state.sup    = [...fSup.opts];
-  state.regiao = [...fReg.opts];
+  state.grupo  = []; // empty = all
+  state.loja   = [];
+  state.sup    = [];
+  state.regiao = [];
   buildFilters();
   renderPills();
   renderMetrics();
@@ -1783,7 +1789,7 @@ function syncMesFilter() {
   const ordered = MESES_ORDER.filter(m => meses2026.includes(m));
   const mesFlt = FILTERS.find(f => f.id === 'mes');
   mesFlt.opts = ordered;
-  state.mes = [...ordered];
+  state.mes = []; // empty = all months selected
   // Update date input limits and reset date range to full span of data
   const allDays = SO_DAY_DATA.map(r=>r.data).sort();
   const minD = allDays[0] || DATE_MIN;
