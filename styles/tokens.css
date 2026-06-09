@@ -1,0 +1,87 @@
+/* ============================================================
+   OSKLEN INTRANET — Design Tokens
+   Fonte única de verdade para cores, tipografia e espaçamentos.
+   Nunca defina cores ou fontes fora deste arquivo.
+   ============================================================ */
+
+:root {
+
+  /* --- Paleta base (identidade Osklen: monocromático + acentos funcionais) --- */
+  --black:        #111111;
+  --gray-900:     #1a1a1a;
+  --gray-800:     #2c2c2c;
+  --gray-700:     #444444;
+  --gray-600:     #666666;
+  --gray-500:     #888888;
+  --gray-400:     #aaaaaa;
+  --gray-300:     #cccccc;
+  --gray-200:     #e2e2e2;
+  --gray-150:     #ebebeb;
+  --gray-100:     #f3f3f3;
+  --gray-50:      #f8f8f8;
+  --white:        #ffffff;
+
+  /* --- Semântico (status) --- */
+  --green:        #1a6b3c;
+  --green-bg:     #e8f5ee;
+  --red:          #b03030;
+  --red-bg:       #fde8e8;
+  --amber:        #7a5500;
+  --amber-bg:     #fef3d8;
+  --blue:         #1a4b8c;
+  --blue-bg:      #e8f0fb;
+
+  /* --- Superfícies --- */
+  --bg:           #f5f5f5;
+  --surface:      #ffffff;
+  --surface-2:    #f3f3f3;
+  --border:       #e2e2e2;
+  --border-light: #ebebeb;
+
+  /* --- Sidebar (dark) --- */
+  --sidebar-bg:         #111111;
+  --sidebar-border:     #222222;
+  --sidebar-text:       #888888;
+  --sidebar-text-hover: #cccccc;
+  --sidebar-text-active:#ffffff;
+  --sidebar-active-bg:  #1e1e1e;
+  --sidebar-hover-bg:   #1a1a1a;
+  --sidebar-section:    #444444;
+
+  /* --- Tipografia --- */
+  --font:         'Inter', system-ui, sans-serif;
+  --font-mono:    'DM Mono', 'Courier New', monospace;
+
+  /* --- Escala de tipo --- */
+  --text-xs:    10px;
+  --text-sm:    11px;
+  --text-base:  13px;
+  --text-md:    14px;
+  --text-lg:    16px;
+  --text-xl:    20px;
+  --text-2xl:   24px;
+
+  /* --- Espaçamentos --- */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+
+  /* --- Raios --- */
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  10px;
+  --radius-xl:  14px;
+
+  /* --- Sombras --- */
+  --shadow-sm:  0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:  0 4px 16px rgba(0,0,0,.10), 0 2px 4px rgba(0,0,0,.06);
+
+  /* --- Layout --- */
+  --sidebar-width:    210px;
+  --topbar-height:    52px;
+  --content-padding:  24px;
+}

@@ -1,0 +1,69 @@
+/* ============================================================
+   OSKLEN INTRANET — Header / Topbar
+   ============================================================ */
+
+.topbar {
+  background: var(--black);
+  padding: 0 var(--content-padding);
+  height: var(--topbar-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #222;
+  flex-shrink: 0;
+}
+
+.topbar-title-wrap { display: flex; flex-direction: column; }
+.topbar-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--white);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+.topbar-sub {
+  font-size: 11px;
+  color: #555;
+  margin-top: 1px;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Pill / botão de ação */
+.topbar-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid #333;
+  border-radius: var(--radius-md);
+  font-size: 11px;
+  color: #aaa;
+  background: #1a1a1a;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.topbar-pill:hover { background: #222; color: #ccc; }
+.topbar-pill.active { background: var(--white); color: var(--black); border-color: var(--white); }
+.topbar-pill i { font-size: 13px; }
+
+.topbar-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #222;
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+  border: 1px solid #333;
+}
