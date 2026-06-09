@@ -267,7 +267,7 @@
           <i class="ti ti-file-spreadsheet" style="font-size:14px"></i>
           Atualizar planilha
         </button>
-        <span class="upload-meta" id="upload-meta" style="font-size:10px;color:var(--text-hint)">Nenhum arquivo importado</span>
+        <span class="upload-meta" id="upload-meta" style="font-size:10px;color:var(--text-hint)">Importe e salve o arquivo gerado para compartilhar</span>
       </div>
     </div>
 
@@ -1961,7 +1961,7 @@ async function confirmUpload() {
         renderGroupList();
 
         updateStoreCounts();
-        showToast('Dados importados! Arquivo HTML atualizado baixado automaticamente — use-o para manter os dados.', 'success');
+        showToast('✅ Dados importados! Use o arquivo baixado para abrir em qualquer máquina com os dados salvos.', 'success');
         btn.disabled = false;
         btn.innerHTML = '<i class="ti ti-upload" style="font-size:13px;vertical-align:-1px;margin-right:4px"></i>Importar';
       } catch(renderErr) {
@@ -2078,75 +2078,107 @@ updateStoreCounts();
 renderDailyTable();
 initCharts();
 // ── Salvar HTML atualizado (download) ──
-// Função que gera e baixa um novo HTML com os dados embutidos
+// Lê o arquivo HTML original via fetch e substitui os dados embutidos
 async function saveUpdatedHTML(newSO, newPROD, newSKU) {
   try {
-    const src = document.documentElement.outerHTML;
+    // Tenta buscar o arquivo original via fetch para evitar DOM modificado
+    let src;
+    try {
+      const resp = await fetch(location.href, { cache: 'no-store' });
+      if (!resp.ok) throw new Error('fetch failed');
+      src = await resp.text();
+    } catch(_) {
+      // Fallback: usa o outerHTML — funciona quando aberto localmente via file://
+      src = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+    }
 
     const soJson   = JSON.stringify(newSO);
     const prodJson = JSON.stringify(newPROD);
     const skuJson  = JSON.stringify(newSKU);
 
-    // Use indexOf + bracket counting — no regex, works with any data size
-    function replaceConst(src, constName, newValue) {
+    // Substitui um const array pelo novo valor (busca por colchetes balanceados)
+    function replaceConst(s, constName, newValue) {
       const marker = 'const ' + constName + ' =';
-      const start  = src.indexOf(marker);
-      if(start === -1) { console.warn('Marker not found:', constName); return src; }
-      const openPos = src.indexOf('[', start);
-      if(openPos === -1) return src;
+      const start  = s.indexOf(marker);
+      if (start === -1) { console.warn('Marcador não encontrado:', constName); return s; }
+      const openPos = s.indexOf('[', start);
+      if (openPos === -1) return s;
       let depth = 0, i = openPos;
-      for(; i < src.length; i++) {
-        if(src[i] === '[') depth++;
-        else if(src[i] === ']') { depth--; if(depth === 0) break; }
+      for (; i < s.length; i++) {
+        if (s[i] === '[') depth++;
+        else if (s[i] === ']') { depth--; if (depth === 0) break; }
       }
       let closePos = i + 1;
-      if(src[closePos] === ';') closePos++;
-      return src.slice(0, start) + marker + ' ' + newValue + ';' + src.slice(closePos);
+      if (s[closePos] === ';') closePos++;
+      return s.slice(0, start) + marker + ' ' + newValue + ';' + s.slice(closePos);
     }
 
-    function replaceObj(src, constName, newValue) {
+    // Substitui um const objeto pelo novo valor (busca por chaves balanceadas)
+    function replaceObj(s, constName, newValue) {
       const marker = 'const ' + constName + ' =';
-      const start  = src.indexOf(marker);
-      if(start === -1) return src;
-      const openPos = src.indexOf('{', start);
-      if(openPos === -1) return src;
+      const start  = s.indexOf(marker);
+      if (start === -1) return s;
+      const openPos = s.indexOf('{', start);
+      if (openPos === -1) return s;
       let depth = 0, i = openPos;
-      for(; i < src.length; i++) {
-        if(src[i] === '{') depth++;
-        else if(src[i] === '}') { depth--; if(depth === 0) break; }
+      for (; i < s.length; i++) {
+        if (s[i] === '{') depth++;
+        else if (s[i] === '}') { depth--; if (depth === 0) break; }
       }
       let closePos = i + 1;
-      if(src[closePos] === ';') closePos++;
-      // skip rest of line (comments)
-      while(closePos < src.length && src[closePos] !== '\n') closePos++;
-      return src.slice(0, start) + marker + ' ' + newValue + ';' + src.slice(closePos);
+      if (s[closePos] === ';') closePos++;
+      while (closePos < s.length && s[closePos] !== '\n') closePos++;
+      return s.slice(0, start) + marker + ' ' + newValue + ';' + s.slice(closePos);
     }
 
-    let updated = replaceConst(src, 'SO_DATA', soJson);
-    updated = replaceConst(updated, 'PROD_DATA', prodJson);
-    updated = replaceConst(updated, 'PROD_SKU_DATA', skuJson);
+    let updated = replaceConst(src, 'SO_DATA',       soJson);
+    updated     = replaceConst(updated, 'PROD_DATA', prodJson);
+    updated     = replaceConst(updated, 'PROD_SKU_DATA', skuJson);
 
+    // Atualiza SO_META com o mês mais recente dos dados importados
     const anos2026 = newSO.filter(r => r.ano === 2026);
-    if(anos2026.length) {
+    if (anos2026.length) {
       const lastMes = Math.max(...anos2026.map(r => r.mes));
       const MESES_NOMES = ['JANEIRO','FEVEREIRO','MARÇO','ABRIL','MAIO','JUNHO','JULHO','AGOSTO','SETEMBRO','OUTUBRO','NOVEMBRO','DEZEMBRO'];
-      const lastMesNome = MESES_NOMES[lastMes-1] || '';
-      updated = replaceObj(updated, 'SO_META', JSON.stringify({ lastMes, lastDia: 31, lastMesNome }));
+      const lastMesNome = MESES_NOMES[lastMes - 1] || '';
+      // Preserva lastDia do arquivo original se disponível
+      const lastDia = (typeof SO_META !== 'undefined' && SO_META.lastDia) ? SO_META.lastDia : 31;
+      updated = replaceObj(updated, 'SO_META', JSON.stringify({ lastMes, lastDia, lastMesNome }));
     }
+
+    // Verifica se as substituições funcionaram
+    const checks = [
+      { name: 'SO_DATA',       val: soJson },
+      { name: 'PROD_DATA',     val: prodJson },
+      { name: 'PROD_SKU_DATA', val: skuJson },
+    ];
+    for (const { name, val } of checks) {
+      const marker = 'const ' + name + ' = ';
+      if (!updated.includes(marker)) {
+        console.error('Falha ao substituir ' + name + ' no HTML gerado.');
+        showToast('Erro: não foi possível embutir ' + name + ' no arquivo.', 'error');
+        return;
+      }
+    }
+
+    const now      = new Date();
+    const datePart = now.toISOString().slice(0, 10);
+    const fileName = 'dashboard_vendas_' + datePart + '.html';
 
     const blob = new Blob([updated], { type: 'text/html;charset=utf-8' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href     = url;
-    const now  = new Date();
-    a.download = 'dashboard_vendas_' + now.toISOString().slice(0,10) + '.html';
+    a.download = fileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    console.log('HTML atualizado baixado com sucesso');
-  } catch(err) {
-    console.warn('Erro ao gerar HTML:', err.message);
+
+    console.log('HTML atualizado baixado:', fileName);
+  } catch (err) {
+    console.warn('Erro ao gerar HTML:', err);
+    showToast('Aviso: não foi possível baixar o HTML atualizado. (' + err.message + ')', 'error');
   }
 }
 
